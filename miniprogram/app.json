@@ -1,0 +1,10 @@
+{
+  "pages": [
+    "pages/login/login",
+    "pages/devices/devices"
+  ],
+  "window": {
+    "navigationBarTitleText": "智能睡眠管理",
+    "navigationBarBackgroundColor": "#ffffff"
+  }
+}

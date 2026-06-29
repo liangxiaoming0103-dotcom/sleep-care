@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>第1大节教学讲义（V3.1版）：环境搭建、需求分析与数据库设计</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #eef2f7;
+            font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', system-ui, -apple-system, sans-serif;
+            padding: 40px 20px;
+            color: #1a2c3e;
+            line-height: 1.6;
+        }
+        .document-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
+            padding: 48px 48px;
+        }
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+                margin: 0;
+            }
+            .document-container {
+                box-shadow: none;
+                padding: 0.2in;
+                max-width: 100%;
+                border-radius: 0;
+            }
+            .page-break {
+                page-break-before: always;
+            }
+            .no-break {
+                page-break-inside: avoid;
+            }
+            h2, h3, .task-card {
+                page-break-after: avoid;
+            }
+            pre, .code-block {
+                page-break-inside: avoid;
+            }
+            .version-badge {
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+            }
+            .teacher-talk, .code-walkthrough, .knowledge-box {
+                page-break-inside: avoid;
+            }
+        }
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #155e7a, #0f3b4f);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            border-left: 5px solid #2c7da0;
+            padding-left: 20px;
+            margin-bottom: 6px;
+        }
+        .version-badge {
+            display: inline-block;
+            background: #d97706;
+            color: white;
+            font-size: 13px;
+            font-weight: 700;
+            padding: 2px 14px;
+            border-radius: 30px;
+            margin-left: 16px;
+            vertical-align: middle;
+        }
+        .sub {
+            color: #2c5f7a;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #cbdde9;
+            padding-bottom: 12px;
+            font-size: 16px;
+        }
+        .meta-bar {
+            background: #e6f4fa;
+            border-radius: 20px;
+            padding: 14px 24px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin: 20px 0 30px;
+        }
+        .meta-item {
+            flex: 1;
+            min-width: 160px;
+        }
+        .meta-label {
+            font-weight: 700;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+            color: #0a5c7e;
+        }
+        .meta-value {
+            font-weight: 500;
+            margin-top: 6px;
+            font-size: 15px;
+        }
+        .update-log {
+            background: #fffbeb;
+            border: 1px solid #fcd34d;
+            border-radius: 16px;
+            padding: 16px 20px;
+            margin: 16px 0 24px;
+        }
+        .update-log h4 {
+            color: #92400e;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        .update-log ul {
+            margin-left: 20px;
+            color: #78350f;
+        }
+        .update-log ul li {
+            margin: 4px 0;
+        }
+        h2 {
+            font-size: 24px;
+            margin-top: 36px;
+            margin-bottom: 16px;
+            background: #eef2fa;
+            display: inline-block;
+            padding: 4px 20px;
+            border-radius: 40px;
+            color: #155e75;
+            font-weight: 600;
+        }
+        h3 {
+            font-size: 20px;
+            margin: 28px 0 12px 0;
+            color: #1f6e8c;
+            border-left: 4px solid #3b82f6;
+            padding-left: 14px;
+        }
+        h4 {
+            font-size: 18px;
+            margin: 20px 0 10px;
+            color: #2c7da0;
+        }
+        .teacher-talk {
+            background: #fefce8;
+            border-left: 5px solid #eab308;
+            padding: 16px 20px;
+            margin: 20px 0;
+            border-radius: 16px;
+            font-style: normal;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        }
+        .teacher-talk strong {
+            color: #b45309;
+        }
+        .teacher-talk-fix {
+            background: #f0fdf4;
+            border-left: 5px solid #22c55e;
+            padding: 16px 20px;
+            margin: 20px 0;
+            border-radius: 16px;
+        }
+        .code-walkthrough {
+            background: #e8f0fe;
+            border-left: 5px solid #3b82f6;
+            padding: 16px 20px;
+            margin: 16px 0;
+            border-radius: 16px;
+            font-style: normal;
+        }
+        .code-walkthrough strong {
+            color: #1e40af;
+        }
+        .code-walkthrough ul {
+            margin-top: 8px;
+            padding-left: 20px;
+        }
+        .code-walkthrough ul li {
+            margin: 6px 0;
+        }
+        .knowledge-box {
+            background: #f0f7fe;
+            border-left: 4px solid #3b82f6;
+            padding: 12px 16px;
+            margin: 12px 0;
+            border-radius: 8px;
+        }
+        .knowledge-box strong {
+            color: #1e40af;
+        }
+        .knowledge-box ul {
+            margin-top: 6px;
+            padding-left: 20px;
+        }
+        .knowledge-box ul li {
+            margin: 4px 0;
+        }
+        .task-card {
+            background: #f9fbfe;
+            border-radius: 20px;
+            margin: 20px 0;
+            border: 1px solid #e2edf2;
+            overflow: hidden;
+            break-inside: avoid;
+        }
+        .task-header {
+            background: #f0f6fa;
+            padding: 12px 20px;
+            font-weight: 700;
+            font-size: 18px;
+            border-bottom: 1px solid #dce5ec;
+            color: #0c4a6e;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+        .task-header .time-tag {
+            font-weight: 400;
+            font-size: 14px;
+            color: #5e7e9e;
+            background: #e2edf2;
+            padding: 2px 12px;
+            border-radius: 30px;
+        }
+        .task-body {
+            padding: 18px 22px;
+        }
+        .step-list {
+            margin-top: 12px;
+            padding-left: 20px;
+            list-style-type: decimal;
+        }
+        .step-list li {
+            margin: 10px 0;
+        }
+        .step-list li strong {
+            color: #0c4a6e;
+        }
+        .code-block {
+            background: #1e2a3a;
+            color: #e2e8f0;
+            padding: 12px 16px;
+            border-radius: 14px;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin: 12px 0;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .code-block .comment {
+            color: #6a9955;
+        }
+        .code-block .keyword {
+            color: #c586c0;
+        }
+        .code-block .string {
+            color: #ce9178;
+        }
+        .gui-step {
+            background: #f0f7fe;
+            border-left: 3px solid #2563eb;
+            padding: 12px 16px;
+            margin: 12px 0;
+            border-radius: 12px;
+        }
+        .gui-step strong {
+            color: #1e40af;
+        }
+        code {
+            background: #eef2f6;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 18px 0;
+        }
+        th, td {
+            border: 1px solid #cbd5e1;
+            padding: 8px 12px;
+            vertical-align: top;
+        }
+        th {
+            background: #e2edf2;
+            font-weight: 600;
+        }
+        .badge {
+            background: #2c7da0;
+            color: white;
+            border-radius: 40px;
+            padding: 2px 12px;
+            font-size: 12px;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .badge-warn {
+            background: #d97706;
+            color: white;
+            border-radius: 40px;
+            padding: 2px 12px;
+            font-size: 12px;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .badge-green {
+            background: #16a34a;
+            color: white;
+            border-radius: 40px;
+            padding: 2px 12px;
+            font-size: 12px;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .badge-blue {
+            background: #3b82f6;
+            color: white;
+            border-radius: 40px;
+            padding: 2px 12px;
+            font-size: 12px;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .badge-purple {
+            background: #8b5cf6;
+            color: white;
+            border-radius: 40px;
+            padding: 2px 12px;
+            font-size: 12px;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .checklist {
+            background: #f0f9f4;
+            padding: 16px 20px;
+            border-radius: 20px;
+            margin: 16px 0;
+        }
+        .checklist li {
+            margin: 6px 0;
+        }
+        .trouble-box {
+            background: #fef2f2;
+            border: 1px solid #fca5a5;
+            border-radius: 16px;
+            padding: 16px 20px;
+            margin: 16px 0;
+        }
+        .trouble-box h4 {
+            color: #b91c1c;
+            margin-top: 0;
+        }
+        .trouble-box strong {
+            color: #b91c1c;
+        }
+        footer {
+            margin-top: 48px;
+            text-align: center;
+            font-size: 12px;
+            color: #5e7e9e;
+            border-top: 1px solid #cbdde9;
+            padding-top: 24px;
+        }
+        hr {
+            margin: 24px 0;
+            border: 0;
+            height: 1px;
+            background: #cbdde9;
+        }
+        .step-note {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 10px 14px;
+            margin: 8px 0;
+            border: 1px solid #e2e8f0;
+            font-size: 14px;
+        }
+        .step-note .label {
+            font-weight: 600;
+            color: #334155;
+        }
+        details summary {
+            cursor: pointer;
+            color: #2563eb;
+            font-weight: 500;
+        }
+        details summary:hover {
+            text-decoration: underline;
+        }
+        .prompt-box {
+            background: #f0fdf4;
+            border-left: 4px solid #22c55e;
+            padding: 12px 16px;
+            margin: 10px 0;
+            border-radius: 8px;
+        }
+        .img-placeholder {
+            background: #eef2f6;
+            border: 2px dashed #94a3b8;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            color: #64748b;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+        .db-tag {
+            display: inline-block;
+            background: #dbeafe;
+            color: #1e40af;
+            font-size: 11px;
+            padding: 1px 10px;
+            border-radius: 12px;
+            font-weight: 600;
+            margin-left: 6px;
+        }
+        @media (max-width: 700px) {
+            .document-container {
+                padding: 24px 20px;
+            }
+            h1 {
+                font-size: 22px;
+            }
+            .task-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="document-container">
+
+    <h1>
+        🧠 第1大节教学讲义
+        <span class="version-badge">V3.0 版</span>
+    </h1>
+    <div class="sub">环境搭建、需求分析与数据库设计 · 90分钟课程设计</div>
+
+
+    <div class="meta-bar">
+        <div class="meta-item"><div class="meta-label">📌 课程名称</div><div class="meta-value">智能睡眠健康管理软件实训</div></div>
+        <div class="meta-item"><div class="meta-label">⏱️ 课时</div><div class="meta-value">90分钟（讲解20' + 动手70'）</div></div>
+        <div class="meta-item"><div class="meta-label">🎯 本节主题</div><div class="meta-value">项目启动 · 需求理解 · 环境搭建 · <strong>数据库设计（5张核心表） · 项目规范（CLAUDE.md）</strong></div></div>
+        <div class="meta-item"><div class="meta-label">🤖 核心工具</div><div class="meta-value">Node.js, Git, VSCode, Claude Code, 微信开发者工具</div></div>
+    </div>
+
+    <!-- 更新日志 -->
+    <div class="update-log">
+        <h4>📝 本节核心（V3.1 升级）</h4>
+        <ul>
+            <li><strong>数据库驱动设计</strong>：从第1节开始就强调“数据库优先”理念，所有数据持久化到 SQLite</li>
+            <li><strong>ER 图 + DDL</strong>：不仅生成 ER 图，还生成完整的 <strong>SQLite DDL 建表语句</strong>（5张核心表），为第2节做准备</li>
+            <li><strong>五张核心表</strong>：<code>users</code>、<code>devices</code>、<code>sleep_reports</code>、<code>user_settings</code>、<code>doctor_authorizations</code></li>
+            <li><strong>硬件的无缝对接</strong>：所有表结构完全对齐最终需求，后续接入真实硬件时 API 无需改动</li>
+            <li><strong>知识解析+代码走读</strong>：每个 AI 生成任务后都进行深度解读，避免“AI 黑箱”</li>
+            <li><strong>新增：项目规范文件（CLAUDE.md）</strong>：使用 Claude Code 的 <code>/init</code> 命令生成项目规范，约束后续 Vibe Coding 行为，确保代码风格统一、AI 辅助开发有据可依</li>
+        </ul>
+    </div>
+
+    <!-- ========== 一、课程导入 ========= -->
+    <h2>📖 一、课程导入</h2>
+    <div class="teacher-talk">
+        <strong>🎤 教师口述（3分钟）</strong><br>
+        同学们好，从今天开始我们将进行为期13大节的“智能睡眠健康管理软件”项目实训。最终我们要交付一个包含<strong>微信小程序、云后台API、医生端Web</strong>的完整软件系统，模拟睡眠监测与干预服务。<br><br>
+        这个项目的特殊之处在于——<strong>不依赖真实硬件</strong>。所有设备数据、环境调控指令都用模拟数据或预留接口实现。等硬件就绪后，只需替换数据源，系统就能无缝接入真硬件。这种“软硬件解耦”的开发方式在企业中很常见，可以提前验证用户体验和业务流程。<br><br>
+        今天是第1大节，核心任务是<strong>打好地基</strong>：搭建开发环境、理解需求、<strong>设计数据库（5张核心表）</strong>，并用 Git 管理项目。<br>
+        <strong>✅ 目标是</strong>：下课前，每人都有自己的项目文件夹、Git仓库、以及四份设计文档（MVP清单、架构图、<strong>数据库ER图 + DDL建表语句</strong>），以及<strong>项目规范文件 CLAUDE.md</strong>，为后续 AI 辅助开发提供统一约束。
+    </div>
+
+    <h2>🎯 二、教学目标</h2>
+    <div class="teacher-talk" style="background:#f0f7fe; border-left-color:#3b82f6;">
+        <strong>📌 学完本节，你能够：</strong>
+        <ul style="margin-top: 10px; margin-left: 20px;">
+            <li>说出项目主要功能范围（用户登录、虚拟设备、睡眠报告、医生授权）</li>
+            <li>在自己的电脑上安装并验证 Node.js、Git、VSCode、微信开发者工具</li>
+            <li>使用 VSCode 源代码管理面板初始化 Git 仓库，并进行提交和推送</li>
+            <li><strong>理解数据库优先的设计理念</strong>——为什么在写代码之前先设计数据模型</li>
+            <li>利用 Claude Code 自动生成 MVP 清单、系统架构图、<strong>完整的数据库 ER 图</strong></li>
+            <li><strong>利用 Claude 生成 SQLite DDL 建表语句</strong>（5张核心表），并理解每条语句的含义</li>
+            <li><strong>能说出五张核心表的字段、主键、外键关系</strong>，理解表之间的关联</li>
+            <li><strong>使用 Claude Code 的 /init 命令生成项目规范文件 CLAUDE.md</strong>，理解其作用和内容</li>
+            <li>将本地仓库推送到远程（GitHub/GitLab）</li>
+        </ul>
+    </div>
+
+    <h2>📋 三、需求概览（教师口述 + 白板简图）</h2>
+    <h3>3.1 项目背景</h3>
+    <p>我们要为“智能睡眠环境调控设备”开发配套软件。设备可以监测睡眠、调节灯光声音，但我们先做软件部分。软件分成三块：</p>
+    <ul>
+        <li><strong>微信小程序</strong>：普通用户使用，看睡眠报告、管理设备、授权医生</li>
+        <li><strong>云后台API</strong>：处理数据、存储、模拟数据生成</li>
+        <li><strong>医生端Web</strong>：医生登录后查看患者的睡眠数据</li>
+    </ul>
+    <p><span class="badge-blue">🔑 核心设计原则</span> <strong>数据库优先</strong>——我们先设计好数据模型（表结构），再围绕它开发API和界面。这样后续接入真实硬件时，只需换数据源，API和前端几乎不用改。</p>
+
+    <h3>3.2 MVP功能范围（板书）</h3>
+    <ul>
+        <li>✅ 用户注册/登录（手机号+密码，bcrypt加密）</li>
+        <li>✅ 虚拟设备管理（添加、解绑、修改昵称）</li>
+        <li>✅ 睡眠报告：首页卡片、睡眠分期柱状图、环境噪音曲线图、日/周/月趋势图</li>
+        <li>✅ 个性化作息设置（就寝时间、起床时间）</li>
+        <li>✅ 医生授权：用户侧授权/撤销，医生侧登录查看患者报告（只读）</li>
+        <li>⏸️ 暂不实现（可预留）：e-CBTi全部模块、真实硬件控制、OTA升级、消息推送</li>
+    </ul>
+
+    <h3>3.3 五张核心数据表（板书/投影）</h3>
+    <p>根据需求文档，我们抽象出 <strong>5张核心表</strong>，所有业务数据都存储在这些表中：</p>
+    <table>
+        <thead><tr><th>表名</th><th>用途</th><th>关键字段</th></tr></thead>
+        <tbody>
+            <tr><td><code>users</code></td><td>用户信息</td><td>id, phone, password_hash, nickname, role, status</td></tr>
+            <tr><td><code>devices</code></td><td>设备信息</td><td>id, serial_no, user_id, nickname, is_virtual, online_status</td></tr>
+            <tr><td><code>sleep_reports</code></td><td>睡眠报告</td><td>id, user_id, report_date, sleep_score, total_minutes, heart_rate_json, sleep_stages_json, noise_json</td></tr>
+            <tr><td><code>user_settings</code></td><td>用户设置</td><td>id, user_id, bed_time, wake_time, sunrise_duration_minutes</td></tr>
+            <tr><td><code>doctor_authorizations</code></td><td>医生授权</td><td>id, patient_id, doctor_id, status, expire_date, doctor_note</td></tr>
+        </tbody>
+    </table>
+    <p><span class="badge">关键</span> 这些表结构<strong>完全对齐需求文档</strong>，后续接入真实硬件时数据字段无需变更。</p>
+
+    <h3>3.4 无硬件实现策略（重点强调）</h3>
+    <table>
+        <thead><tr><th>模块</th><th>模拟方式</th></tr></thead>
+        <tbody>
+            <tr><td>设备绑定</td><td>输入任意16位序列号或点“添加演示设备”，后台生成虚拟ID</td></tr>
+            <tr><td>睡眠数据</td><td>后台定时任务根据用户作息自动生成假数据，符合生理规律，<strong>存入 sleep_reports 表</strong></td></tr>
+            <tr><td>环境调控</td><td>小程序里滑块调亮度音量，弹窗提示“硬件未就绪”</td></tr>
+            <tr><td>OTA升级</td><td>点击检查更新，返回模拟版本号，不真正升级</td></tr>
+        </tbody>
+    </table>
+
+    <h2>⚙️ 四、技术架构与AI辅助开发</h2>
+    <h3>4.1 技术栈（白板书写）</h3>
+    <ul>
+        <li><strong>后端</strong>：Node.js + Express（轻量快速）</li>
+        <li><strong>数据库</strong>：<strong>SQLite</strong>（文件数据库，零配置，便于实训）→ 后续可无缝迁移至 MySQL/PostgreSQL</li>
+        <li><strong>小程序</strong>：原生框架 + WeUI组件库</li>
+        <li><strong>医生端Web</strong>：原生HTML/CSS/JS + ECharts</li>
+        <li><strong>版本控制</strong>：Git（通过VSCode SCM面板操作）</li>
+        <li><strong>AI辅助</strong>：Claude Code（终端启动，可自动创建文件）</li>
+    </ul>
+    <h3>4.2 简单架构图（教师手绘白板）</h3>
+    <div class="code-block">
+        [小程序] ──API──> [云后台API (Express)] ──> [数据库(SQLite)]<br>
+        [医生Web] ──API──> [云后台API] ──────────────┘
+    </div>
+    <p>数据流向：用户在小程序操作 → 调用后台API → 后台读写数据库 → 返回结果。医生Web同理。</p>
+
+    <h3>4.3 AI辅助开发模式（Vibe Coding）</h3>
+    <p>本次实训采用 <strong>Vibe Coding</strong> 模式 —— 通过自然语言与AI对话，生成高质量代码和文档。你要学会的是：<strong>如何给AI下指令、如何审核和集成AI生成的代码</strong>。</p>
+    <div class="teacher-talk">
+        <strong>💡 示例：让 Claude 自动生成数据库DDL建表语句</strong><br>
+        <ol style="margin-top: 8px; margin-left: 20px;">
+            <li>在VSCode中按 <kbd>Ctrl+`</kbd> 打开终端</li>
+            <li>输入 <code>claude</code> 并回车，进入交互界面</li>
+            <li>输入提示词：<em>“请根据 @docs/需求文档.docx 中的数据结构设计，生成完整的 SQLite DDL 建表语句（包含5张核心表及外键约束），并保存为 docs/database.sql”</em></li>
+            <li>AI 会自动读取需求文档，创建目标文件并写入内容</li>
+        </ol>
+        <strong>⚠️ 注意</strong>：AI 帮你生成，但<strong>你必须理解生成的内容</strong>。这就是为什么每个AI任务之后都有“代码走读”环节。
+    </div>
+
+    <h2>🛠️ 五、学生动手任务清单（超详细 Step-by-Step + 走读解析）</h2>
+    <p>以下任务<strong>请严格按照步骤顺序操作</strong>。每个任务分为三步：<strong>① 知识解析 → ② AI生成 → ③ 内容走读</strong>，确保你既会用AI，又理解AI生成的内容。</p>
+
+    <!-- ========== 任务1 ========= -->
+    <div class="task-card">
+        <div class="task-header">
+            <span>✅ 任务1：安装开发环境</span>
+            <span class="time-tag">⏱️ 8分钟</span>
+        </div>
+        <div class="task-body">
+            <p><strong>目的</strong>：在电脑上安装项目开发所需的所有工具。</p>
+            <ol class="step-list">
+                <li>
+                    <strong>检查 Node.js 是否已安装</strong><br>
+                    按下 <kbd>Win+R</kbd>（Windows）或打开终端（Mac），输入 <code>cmd</code> 打开命令提示符（Windows）或终端（Mac）。<br>
+                    在命令行中输入 <code>node -v</code> 并回车。<br>
+                    <span class="step-note"><span class="label">✅ 预期结果：</span> 显示版本号如 <code>v18.17.0</code>。若显示“不是内部或外部命令”或“command not found”，则需安装。</span>
+                </li>
+                <li>
+                    <strong>安装 Node.js（如未安装）</strong><br>
+                    打开浏览器访问 <a href="https://nodejs.org" target="_blank">nodejs.org</a>，点击“LTS”版本下载安装包。<br>
+                    运行安装包，一路“Next”，<strong>务必勾选“Add to PATH”</strong>。安装完成后重启命令提示符，再次执行 <code>node -v</code> 验证。
+                    <span class="step-note"><span class="label">📌 知识点</span> Node.js 是 JavaScript 的运行时环境，让我们可以在服务器端运行 JavaScript 代码。<strong>LTS</strong>（Long-Term Support）是长期支持版本，更稳定。</span>
+                </li>
+                <li>
+                    <strong>检查 Git 是否已安装</strong><br>
+                    在命令行中输入 <code>git --version</code> 并回车。<br>
+                    <span class="step-note"><span class="label">✅ 预期结果：</span> 显示 <code>git version 2.x.x</code>。若未安装，去 <a href="https://git-scm.com" target="_blank">git-scm.com</a> 下载并安装。</span>
+                </li>
+                <li>
+                    <strong>安装 VSCode（如未安装）</strong><br>
+                    访问 <a href="https://code.visualstudio.com" target="_blank">code.visualstudio.com</a>，下载对应系统的安装包并安装。
+                </li>
+                <li>
+                    <strong>安装微信开发者工具</strong><br>
+                    访问 <a href="https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html" target="_blank">微信开发者工具下载页</a>，下载稳定版安装包，安装后用微信扫码登录。
+                </li>
+            </ol>
+            <div class="gui-step">
+                <strong>✅ 验收：</strong> 在命令行中分别执行 <code>node -v</code>、<code>git --version</code>，均能正常显示版本号；微信开发者工具能打开并显示登录界面。
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 任务2 ========= -->
+    <div class="task-card">
+        <div class="task-header">
+            <span>✅ 任务2：创建项目文件夹并在VSCode中初始化Git仓库</span>
+            <span class="time-tag">⏱️ 8分钟</span>
+        </div>
+        <div class="task-body">
+            <p><strong>目的</strong>：创建项目目录并初始化 Git 版本控制。</p>
+            <ol class="step-list">
+                <li>
+                    <strong>新建项目文件夹</strong><br>
+                    在桌面（或你指定的统一目录）上，右键 → “新建文件夹”，命名为 <code>sleep-care</code>（注意全小写，英文，无空格）。
+                </li>
+                <li>
+                    <strong>在 VSCode 中打开该文件夹</strong><br>
+                    打开 VSCode，点击菜单栏 <strong>“文件” → “打开文件夹”</strong>，选择刚创建的 <code>sleep-care</code> 文件夹，点击“选择文件夹”。
+                </li>
+                <li>
+                    <strong>打开源代码管理（SCM）面板</strong><br>
+                    在 VSCode 左侧活动栏中，点击 <strong>“源代码管理”</strong> 图标（形状像分叉的树枝）。
+                </li>
+                <li>
+                    <strong>初始化 Git 仓库</strong><br>
+                    在 SCM 面板中，如果显示“未检测到 Git 仓库”，则点击 <strong>“初始化仓库”</strong> 按钮（如果已存在仓库，则显示“更改”列表，可直接跳过本步）。<br>
+                    <span class="step-note"><span class="label">📌 知识点</span> <code>git init</code> 会在当前目录创建一个隐藏的 <code>.git</code> 文件夹，里面存放所有版本历史记录。</span>
+                </li>
+            </ol>
+            <div class="gui-step">
+                <strong>✅ 操作速记：</strong> 打开文件夹 → 点左侧分支图标 → 点击“初始化仓库”。
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 任务3 ========= -->
+    <div class="task-card">
+        <div class="task-header">
+            <span>✅ 任务3：用 Claude 自动生成 .gitignore 文件</span>
+            <span class="time-tag">⏱️ 8分钟</span>
+        </div>
+        <div class="task-body">
+
+            <div class="knowledge-box">
+                <strong>📚 前置知识：.gitignore 文件是做什么的？</strong><br>
+                <code>.gitignore</code> 文件告诉 Git <strong>哪些文件/文件夹不需要被版本控制</strong>。<br>
+                <strong>为什么要忽略某些文件？</strong>
+                <ul>
+                    <li><strong>node_modules/</strong>：体积巨大，且可通过 <code>package.json</code> 重新安装</li>
+                    <li><strong>日志文件（*.log）</strong>：每台电脑的日志都不同，存到仓库没有意义</li>
+                    <li><strong>操作系统临时文件</strong>：如 macOS 的 <code>.DS_Store</code>、Windows 的 <code>Thumbs.db</code></li>
+                    <li><strong>环境变量文件（.env）</strong>：含敏感信息，绝对不能提交</li>
+                </ul>
+            </div>
+
+            <ol class="step-list">
+                <li>
+                    <strong>在 VSCode 中打开终端</strong><br>
+                    按下 <kbd>Ctrl+`</kbd>（反引号）打开集成终端。
+                </li>
+                <li>
+                    <strong>启动 Claude Code</strong><br>
+                    在终端中输入 <code>claude</code> 并按回车。等待几秒，直到看到提示符（如 <code>&gt; </code>）。
+                    <span class="step-note"><span class="label">⚠️ 首次运行</span> 可能会要求登录或授权，按终端提示操作。</span>
+                </li>
+                <li>
+                    <strong>让 AI 自动创建 .gitignore 文件</strong><br>
+                    在 Claude 交互界面中输入以下提示词并回车：
+                    <div class="prompt-box">
+                        <strong>📝 提示词：</strong><br>
+                        请为 Node.js + 微信小程序混合项目生成标准的.gitignore文件，忽略node_modules、日志、操作系统临时文件、VSCode配置、微信开发者工具临时目录、环境变量文件等，并直接写入项目根目录的 .gitignore 文件中。
+                    </div>
+                    AI 会自动创建 <code>.gitignore</code> 文件并写入内容。
+                </li>
+                <li>
+                    <strong>通过 SCM 面板暂存并提交</strong><br>
+                    <ul style="margin-top: 8px; list-style-type: lower-alpha; padding-left: 20px;">
+                        <li>点击左侧“源代码管理”图标，<code>.gitignore</code> 会出现在 <strong>“未跟踪”</strong> 分组下</li>
+                        <li>点击文件右侧出现的 <strong>“+”号（暂存更改）</strong></li>
+                        <li>在 SCM 面板顶部输入框中输入提交消息：<code>chore: 添加gitignore</code></li>
+                        <li>点击 <strong>“✔”提交（Commit）</strong> 按钮</li>
+                    </ul>
+                </li>
+            </ol>
+
+            <div class="code-walkthrough">
+                <strong>🔍 内容走读：理解 AI 生成的 .gitignore</strong>
+                <div class="code-block" style="margin-top:8px; font-size:12px;">
+# 依赖目录 - 体积最大，必须忽略
+node_modules/
+
+# 日志文件 - 每台机器不同
+*.log
+
+# 操作系统生成的文件
+.DS_Store        # macOS 文件夹元数据
+Thumbs.db        # Windows 缩略图缓存
+
+# VSCode 配置（个人偏好）
+.vscode/
+
+# 环境变量文件（含敏感信息）
+.env
+.env.local
+
+# 微信开发者工具临时目录
+.wx_temp/
+miniprogram_npm/
+                </div>
+                <ul>
+                    <li><strong><code>node_modules/</code></strong>：最重要的忽略项，运行 <code>npm install</code> 时自动生成</li>
+                    <li><strong><code>.env</code></strong>：存放数据库密码、API密钥等敏感信息，绝对不能提交到 Git</li>
+                </ul>
+                <p><span class="badge-blue">💡 重点理解</span> <code>.gitignore</code> 的核心原则：<strong>只提交“源代码”和“配置文件”，不提交“生成的文件”和“敏感信息”</strong>。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 任务4（升级版：生成ER图 + DDL） ========= -->
+    <div class="task-card">
+        <div class="task-header">
+            <span>✅ 任务4：用 Claude 生成 MVP 清单、架构图、<strong>ER图 + DDL建表语句</strong></span>
+            <span class="time-tag">⏱️ 25分钟</span>
+        </div>
+        <div class="task-body">
+
+            <div class="knowledge-box">
+                <strong>📚 前置知识：数据库ER图与DDL</strong><br>
+                <ul>
+                    <li><strong>MVP功能清单</strong>：列出“为了验证产品价值，必须实现的最核心功能”，指导开发范围</li>
+                    <li><strong>系统架构图</strong>：用 Mermaid 展示前端、后端、数据库之间的关系和数据流向</li>
+                    <li><strong>数据库ER图</strong>：展示<strong>数据表结构</strong>（有哪些表、每个表有哪些字段）以及<strong>表与表之间的关系</strong></li>
+                    <li><strong>DDL（Data Definition Language）</strong>：建表语句，是数据库的“施工图”。有了 DDL，第2节就能直接创建数据库表，把设计变成可用的数据库</li>
+                </ul>
+                <strong>为什么今天就要生成 DDL？</strong> 因为第2节我们要用 SQLite 创建这些表并实现注册登录。提前准备好 DDL，下节课直接运行，无缝衔接。
+            </div>
+
+            <p><strong>准备工作</strong>：确保 Claude 会话处于激活状态。将教师提供的 <strong>“智能睡眠环境调控设备 - 软件系统功能需求（实训需求）.docx”</strong> 复制到 <code>docs/</code> 目录。</p>
+
+            <ol class="step-list">
+                <li>
+                    <strong>创建 docs 文件夹</strong><br>
+                    在 VSCode 资源管理器中，右键 <code>sleep-care</code> 文件夹 → “新建文件夹”，命名为 <code>docs</code>。
+                </li>
+                <li>
+                    <strong>生成 MVP 功能清单</strong><br>
+                    在 Claude 中输入：
+                    <div class="prompt-box">
+                        <strong>📝 提示词：</strong><br>
+                        请根据 @docs/智能睡眠环境调控设备 - 软件系统功能需求（实训需求）.docx 中的需求描述，列出用于实训的MVP功能（用户登录、虚拟设备管理、睡眠报告分期图表、噪音曲线、日周月趋势、个性化作息、医生授权基础），每个功能用一两句话描述，并将内容写入 docs/MVP功能清单.md 文件中。
+                    </div>
+                </li>
+                <li>
+                    <strong>生成系统架构图</strong><br>
+                    在 Claude 中输入：
+                    <div class="prompt-box">
+                        <strong>📝 提示词：</strong><br>
+                        请根据 @docs/智能睡眠环境调控设备 - 软件系统功能需求（实训需求）.docx 中的系统总体架构描述，生成 Mermaid 架构图，展示微信小程序、云后台API（Express）、数据库（SQLite）、医生端Web之间的关系，并说明数据流向。将内容写入 docs/系统架构图.md 文件中。
+                    </div>
+                </li>
+                <li>
+                    <strong>生成数据库ER图 + DDL建表语句（核心任务）</strong><br>
+                    在 Claude 中输入（这是本节最重要的提示词）：
+                    <div class="prompt-box">
+                        <strong>📝 提示词：</strong><br>
+                        请根据 @docs/智能睡眠环境调控设备 - 软件系统功能需求（实训需求）.docx 中“数据结构设计”章节，设计以下5张核心表：users、devices、sleep_reports、user_settings、doctor_authorizations。<br><br>
+                        请输出以下内容，并写入 docs/数据库设计.md 文件中：<br>
+                        1. Mermaid ER图：标注主键（PK）、外键（FK）和字段类型，展示表之间的关联关系<br>
+                        2. 完整的 SQLite DDL 建表语句：每张表的 CREATE TABLE 语句，包含字段类型、主键、外键约束、默认值<br>
+                        3. 每张表的字段说明（中文注释）
+                    </div>
+                    AI 会生成完整的数据库设计文档，包含 ER 图和可直接运行的 DDL 语句。
+                </li>
+                <li>
+                    <strong>验证文件生成</strong><br>
+                    在 VSCode 资源管理器中确认 <code>docs/</code> 目录下已存在 <code>MVP功能清单.md</code>、<code>系统架构图.md</code>、<code>数据库设计.md</code> 三个文件。
+                </li>
+            </ol>
+
+            <div class="code-walkthrough">
+                <strong>🔍 内容走读：理解 AI 生成的数据库设计（ER图 + DDL）</strong>
+
+                <p style="margin-top:12px;"><strong>1. ER图（Mermaid）</strong></p>
+                <p>AI 生成的 ER 图代码大致如下（以 users 和 devices 为例）：</p>
+                <div class="code-block" style="font-size:12px; margin:4px 0;">
+erDiagram
+    users ||--o{ devices : "拥有"
+    users ||--o{ sleep_reports : "生成"
+    users ||--o{ doctor_authorizations : "发起授权"
+    users ||--o{ doctor_authorizations : "处理授权"
+
+    users {
+        integer id PK "主键，自增"
+        varchar phone UK "手机号，11位，唯一"
+        varchar password_hash "密码哈希，bcrypt"
+        varchar nickname "昵称"
+        varchar role "角色：patient/doctor/admin"
+        integer status "状态：1启用 0禁用"
+        datetime created_at "创建时间"
+        datetime updated_at "更新时间"
+    }
+
+    devices {
+        integer id PK "主键，自增"
+        varchar serial_no UK "设备序列号，VIR+16位随机"
+        integer user_id FK "所属用户ID → users.id"
+        varchar nickname "设备昵称"
+        integer is_virtual "是否虚拟设备：1是 0否"
+        integer online_status "在线状态：1在线 0离线"
+        datetime created_at "绑定时间"
+        datetime updated_at "更新时间"
+    }
+                </div>
+                <ul>
+                    <li><strong><code>||--o{</code></strong>：表示“一对多”关系。一个用户可拥有多台设备</li>
+                    <li><strong><code>PK</code></strong>：主键，唯一标识一条记录</li>
+                    <li><strong><code>FK</code></strong>：外键，指向另一张表的主键（如 <code>user_id</code> → <code>users.id</code>）</li>
+                    <li><strong><code>UK</code></strong>：唯一键（如手机号、设备序列号）</li>
+                    <li><strong>五张表的关系</strong>：<code>users</code> 是核心，通过外键与 <code>devices</code>、<code>sleep_reports</code>、<code>user_settings</code>（一对一）、<code>doctor_authorizations</code>（作为患者和医生）关联</li>
+                </ul>
+
+                <p style="margin-top:12px;"><strong>2. DDL 建表语句（SQLite）</strong></p>
+                <div class="code-block" style="font-size:12px; margin:4px 0;">
+-- users 表
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    phone VARCHAR(11) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    nickname VARCHAR(50),
+    role VARCHAR(20) DEFAULT 'patient',
+    status INTEGER DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- devices 表（外键关联 users）
+CREATE TABLE devices (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    serial_no VARCHAR(20) NOT NULL UNIQUE,
+    user_id INTEGER NOT NULL,
+    nickname VARCHAR(50) DEFAULT '我的设备',
+    is_virtual INTEGER DEFAULT 1,
+    online_status INTEGER DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- sleep_reports 表
+CREATE TABLE sleep_reports (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    report_date DATE NOT NULL,
+    sleep_score INTEGER,
+    total_minutes INTEGER,
+    deep_minutes INTEGER,
+    light_minutes INTEGER,
+    rem_minutes INTEGER,
+    awake_minutes INTEGER,
+    wake_count INTEGER,
+    heart_rate_json TEXT,
+    breath_rate_json TEXT,
+    noise_json TEXT,
+    sleep_stages_json TEXT,
+    abnormal_events_json TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(user_id, report_date)
+);
+
+-- user_settings 表（一对一）
+CREATE TABLE user_settings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL UNIQUE,
+    bed_time TIME,
+    wake_time TIME,
+    sunrise_duration_minutes INTEGER DEFAULT 10,
+    sound_type VARCHAR(20),
+    brightness_level INTEGER DEFAULT 5,
+    volume_level INTEGER DEFAULT 5,
+    timezone VARCHAR(50) DEFAULT 'Asia/Shanghai',
+    dnd_enabled INTEGER DEFAULT 0,
+    dnd_start TIME,
+    dnd_end TIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- doctor_authorizations 表
+CREATE TABLE doctor_authorizations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_id INTEGER NOT NULL,
+    doctor_id INTEGER NOT NULL,
+    status VARCHAR(20) DEFAULT 'pending',
+    expire_date DATE,
+    doctor_note TEXT,
+    requested_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    responded_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (patient_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (doctor_id) REFERENCES users(id) ON DELETE CASCADE
+);
+                </div>
+                <ul>
+                    <li><strong><code>PRIMARY KEY AUTOINCREMENT</code></strong>：主键自增，每插入一条新记录自动生成唯一ID</li>
+                    <li><strong><code>NOT NULL</code></strong>：字段不能为空（如手机号、密码哈希必须填写）</li>
+                    <li><strong><code>UNIQUE</code></strong>：字段值不能重复（如手机号、序列号）</li>
+                    <li><strong><code>DEFAULT</code></strong>：默认值（如 <code>role DEFAULT 'patient'</code>，新用户默认为患者角色）</li>
+                    <li><strong><code>FOREIGN KEY ... REFERENCES</code></strong>：外键约束，确保数据完整性。例如 <code>devices.user_id</code> 必须指向一个有效的 <code>users.id</code></li>
+                    <li><strong><code>ON DELETE CASCADE</code></strong>：当用户被删除时，自动删除其所有关联数据（设备、报告、设置等），保证数据一致性</li>
+                    <li><strong><code>UNIQUE(user_id, report_date)</code></strong>：复合唯一约束，同一用户同一天只能有一条报告</li>
+                    <li><strong><code>TEXT</code></strong> 类型用于存储 JSON 数据（如 <code>sleep_stages_json</code>、<code>noise_json</code>）</li>
+                </ul>
+                <p><span class="badge-blue">💡 重点理解</span> DDL 是数据库的“施工图”。有了这些建表语句，第2节我们就能直接创建数据库，把设计变成可用的存储结构。这套表结构<strong>完全对齐需求文档</strong>，后续接入真实硬件时，只需更换数据库连接，表和字段无需改动。</p>
+            </div>
+
+            <div class="gui-step">
+                <strong>✅ 操作速记：</strong> 复制 .docx 到 docs → Claude 中连续输入三条提示词 → 重点生成 ER图 + DDL → 理解五张表的结构和关联关系。
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 任务5（新增）：使用 /init 生成 CLAUDE.md ========= -->
+    <div class="task-card">
+        <div class="task-header">
+            <span>✅ 任务5：使用 Claude Code 的 <code>/init</code> 命令生成项目规范文件（CLAUDE.md）</span>
+            <span class="time-tag">⏱️ 8分钟</span>
+        </div>
+        <div class="task-body">
+
+            <div class="knowledge-box">
+                <strong>📚 前置知识：CLAUDE.md 是什么？</strong><br>
+                <code>CLAUDE.md</code> 是 Claude Code 的项目上下文文件，它告诉 AI 助手关于项目的<strong>技术栈、编码规范、数据库设计、API风格、注释要求</strong>等关键信息。<br>
+                <strong>它的作用</strong>：
+                <ul>
+                    <li>让 AI 生成的代码风格统一，符合项目约定</li>
+                    <li>减少重复提示，AI 能自动遵循规范</li>
+                    <li>新成员加入时，快速了解项目约束</li>
+                </ul>
+                <strong>我们为什么需要它？</strong> 后续 12 大节我们都会使用 Claude 辅助开发，有了 <code>CLAUDE.md</code>，AI 在生成代码时会自动参考这些约束，比如使用 sql.js、统一响应格式、添加中文注释等，极大提高代码质量。
+            </div>
+
+            <ol class="step-list">
+                <li>
+                    <strong>在 Claude 会话中输入 <code>/init</code> 命令</strong><br>
+                    确保 Claude 会话处于激活状态。在输入框中输入 <code>/init</code> 并按回车。<br>
+                    <span class="step-note"><span class="label">📌 知识点</span> <code>/init</code> 是 Claude Code 的内置命令，它会扫描当前项目，生成一个初始的 <code>CLAUDE.md</code> 文件，包含项目的基本信息和目录结构。</span>
+                </li>
+                <li>
+                    <strong>查看生成的 CLAUDE.md 文件</strong><br>
+                    在 VSCode 资源管理器中，项目根目录下会出现 <code>CLAUDE.md</code> 文件。打开它，你会看到一些自动生成的内容，如项目名称、主要文件列表等。<br>
+                    <span class="step-note"><span class="label">💡 提示</span> 这个初始版本还不够完善，我们需要将<strong>教师提供的完整规范</strong>补充进去。</span>
+                </li>
+                <li>
+                    <strong>将完整规范内容写入 CLAUDE.md</strong><br>
+                    在 Claude 会话中，输入以下提示词（可将下方代码块中的规范内容复制到提示词中）：
+                    <div class="prompt-box">
+                        <strong>📝 提示词：</strong><br>
+                        请将以下项目约束与规范内容，合并到根目录的 CLAUDE.md 文件中，保留原有的项目信息，并确保格式清晰。规范内容如下：
+                        <div style="margin-top: 8px; background: #f8fafc; padding: 12px; border-radius: 8px; font-size: 14px; max-height: 200px; overflow-y: auto;">
+                            <!-- 此处应展示完整规范，但为避免重复，我们在下方单独展示，这里留空 -->
+                        </div>
+                        （提示词中请附带下方“完整规范模板”的全部内容）
+                    </div>
+                    <p>或者，你也可以直接复制下方“完整规范模板”内容，手动粘贴到 <code>CLAUDE.md</code> 文件中，覆盖原有内容。</p>
+                    <p><span class="badge-blue">💡 推荐</span> 使用 AI 自动合并，这样可以保持格式一致，同时保留自动生成的目录结构信息。</p>
+                </li>
+                <li>
+                    <strong>验证 CLAUDE.md 内容</strong><br>
+                    确保文件中包含：技术栈约束、数据库规范、API设计规范、代码规范、注释规范、AI行为约束等核心章节。
+                </li>
+            </ol>
+
+            <!-- 完整规范模板（展开） -->
+            <details style="margin: 16px 0;">
+                <summary><strong>📄 点击展开查看完整规范模板（即上方提示词中应包含的内容）</strong></summary>
+                <div class="code-block" style="margin-top:8px; font-size:13px; max-height: 500px; overflow-y: auto;">
+# Sleep Care 项目约束与规范
+
+## 技术栈约束
+- 后端：Node.js 18+ + Express + sql.js（SQLite WASM 版）
+- 数据库：SQLite（开发）/ MySQL（生产），使用 sql.js 驱动
+- 前端：微信小程序原生框架
+- 图表：ECharts + echarts-for-weixin
+
+## 数据库规范
+- 5 张核心表：users, devices, sleep_reports, user_settings, doctor_authorizations
+- 所有写操作后必须调用 saveDb() 持久化（sql.js 显式持久化）
+- 外键约束：ON DELETE CASCADE
+
+## API 设计规范
+- 统一响应格式：{ code: 0, message: 'success', data: {...} }
+- 认证方式：JWT，通过 Authorization: Bearer &lt;token&gt; 传递
+- RESTful 风格：GET /api/resource, POST /api/resource, PUT /api/resource/:id, DELETE /api/resource/:id
+
+## 代码规范
+- 使用 dbGetOne / dbGetAll 辅助函数执行查询
+- 所有数据库操作使用 await getDb() 获取连接
+- Git 提交规范：feat/fix/docs/chore/refactor/test
+
+## 注释规范（新增）
+- **所有生成的代码必须包含中文注释，注释应清晰说明：**
+  - **函数/方法的作用、参数含义、返回值**
+  - **关键业务逻辑的执行步骤（例如数据校验、状态转换、算法核心）**
+  - **复杂或非常规写法的原因（如特殊 SQL 构造、性能优化措施）**
+  - **数据库操作的目的及潜在影响（如级联删除、事务边界）**
+- **注释应贴近代码，避免冗余，但需保证陌生开发者能快速理解意图**
+- **API 路由处理函数需注明路由路径、请求体结构、响应示例（简要）**
+
+## AI 行为约束
+- 生成代码后必须提供代码走读
+- 优先使用 sql.js
+- API 设计需遵循 RESTful 规范
+- **生成代码时，必须在关键逻辑处添加符合“注释规范”的中文注释，并在代码走读中特别说明注释覆盖了哪些核心模块，确保人工走读时无需额外猜测意图**
+                </div>
+            </details>
+
+            <div class="code-walkthrough">
+                <strong>🔍 内容走读：理解 CLAUDE.md 的关键规范</strong>
+                <ul>
+                    <li><strong>技术栈约束</strong>：明确使用 Express + sql.js，保证所有 API 和数据库操作统一</li>
+                    <li><strong>数据库规范</strong>：强调 5 张核心表和 saveDb() 持久化，避免数据丢失</li>
+                    <li><strong>API 设计规范</strong>：统一响应格式和 JWT 认证，前端对接更顺畅</li>
+                    <li><strong>注释规范</strong>：要求 AI 生成带中文注释的代码，提升可维护性</li>
+                    <li><strong>AI 行为约束</strong>：规定代码走读和优先使用 sql.js，保持开发习惯一致</li>
+                </ul>
+                <p><span class="badge-blue">💡 重点理解</span> 有了这份规范，后续 AI 辅助开发时，它会自动遵循这些约束，减少人为纠偏成本。这也是企业级项目中的重要实践。</p>
+            </div>
+
+            <div class="gui-step">
+                <strong>✅ 操作速记：</strong> Claude 中输入 <code>/init</code> → 将规范模板合并到 CLAUDE.md → 检查关键章节 → 提交。
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 任务6（原任务5）：提交所有文档 ========= -->
+    <div class="task-card">
+        <div class="task-header">
+            <span>✅ 任务6：通过SCM面板提交所有文档（含 CLAUDE.md）</span>
+            <span class="time-tag">⏱️ 5分钟</span>
+        </div>
+        <div class="task-body">
+            <ol class="step-list">
+                <li>
+                    <strong>查看更改列表</strong><br>
+                    点击左侧“源代码管理”图标，在“未跟踪”分组中应该能看到 <code>docs/</code> 文件夹下的所有文件以及根目录的 <code>CLAUDE.md</code>。
+                </li>
+                <li>
+                    <strong>暂存所有更改</strong><br>
+                    将鼠标悬停在“更改”或“未跟踪”区域顶部，点击出现的 <strong>“+”号（暂存所有更改）</strong>。
+                </li>
+                <li>
+                    <strong>输入提交消息</strong><br>
+                    在 SCM 面板顶部的输入框中输入：<code>docs: 需求文档、架构设计、数据库DDL 及项目规范 CLAUDE.md</code>。
+                </li>
+                <li>
+                    <strong>提交</strong><br>
+                    点击输入框上方的 <strong>“✔”提交</strong> 按钮。
+                </li>
+                <li>
+                    <strong>验证提交</strong><br>
+                    提交后，“更改”列表应清空。点击 SCM 面板右上角的 <strong>“...” → “查看提交历史”</strong>，应能看到三条提交记录（.gitignore, 文档集, CLAUDE.md）。
+                </li>
+            </ol>
+            <div class="gui-step">
+                <strong>✅ 操作速记：</strong> SCM面板“+”暂存所有 → 写消息 → “✔”提交 → 查看历史确认。
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 任务7（原任务6）：推送到远程仓库 ========= -->
+    <div class="task-card">
+        <div class="task-header">
+            <span>✅ 任务7：推送到远程仓库（在VSCode中完成）</span>
+            <span class="time-tag">⏱️ 10分钟</span>
+        </div>
+        <div class="task-body">
+            <p><strong>前提</strong>：教师已提供远程仓库地址（如 GitHub Classroom）。若没有，可跳过此任务。</p>
+            <ol class="step-list">
+                <li>
+                    <strong>添加远程仓库地址</strong><br>
+                    按 <kbd>Ctrl+Shift+P</kbd> 打开命令面板，输入 <code>Git: Add Remote</code> 并回车。<br>
+                    输入远程名称 <code>origin</code>，回车；然后输入教师提供的仓库 URL，再次回车。
+                </li>
+                <li>
+                    <strong>发布（推送）分支</strong><br>
+                    在 SCM 面板中，点击左下角的 <strong>“发布分支”</strong> 按钮。如果提示“选择上游分支”，选择 <code>main</code>。
+                </li>
+                <li>
+                    <strong>远程验证</strong><br>
+                    打开浏览器，访问远程仓库页面，刷新后应能看到 <code>.gitignore</code>、<code>docs/</code> 文件夹以及 <code>CLAUDE.md</code> 文件，提交记录也应包含最新的一条。
+                </li>
+            </ol>
+            <div class="gui-step">
+                <strong>✅ 操作速记：</strong> 命令面板添加远程 → SCM面板“发布分支” → 浏览器验证。
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 六、教师巡回指导要点 ========= -->
+    <h2>👨‍🏫 六、教师巡回指导要点</h2>
+
+    <div class="checklist">
+        <ul>
+            <li>✅ 检查 <code>node -v</code> 和 <code>git --version</code> 是否正常</li>
+            <li>✅ 项目文件夹路径是否全英文</li>
+            <li>✅ SCM 面板是否成功初始化仓库</li>
+            <li>✅ 学生能否在终端中成功执行 <code>claude</code> 命令</li>
+            <li>✅ <strong>【核心】检查 <code>docs/数据库设计.md</code> 是否包含五张表的 ER 图和完整的 DDL 建表语句</strong></li>
+            <li>✅ <strong>【核心】随机抽查学生，让他们说出五张表的名称、各自的关键字段，以及表之间的关联关系</strong></li>
+            <li>✅ <strong>【新增】检查项目根目录是否存在 <code>CLAUDE.md</code> 文件，且内容包含技术栈、数据库、API、代码、注释、AI行为等规范</strong></li>
+            <li>✅ 检查 <code>docs/</code> 目录下是否有 <code>.docx</code> 需求文档以及三个生成文档</li>
+            <li>✅ 是否每个学生都至少完成了一次提交</li>
+        </ul>
+    </div>
+
+    <!-- ========== 七、常见问题及解决方案 ========= -->
+    <h2>❗ 七、常见问题及解决方案（教师备用）</h2>
+
+    <div class="trouble-box">
+        <h4>❌ 问题1：终端输入 <code>claude</code> 提示“命令未找到”</h4>
+        <p><strong>原因</strong>：Claude Code 扩展未安装或未正确配置 PATH。</p>
+        <p><strong>解决方案</strong>：确认已在 VSCode 中安装 Claude Code 扩展；安装后重启 VSCode；如仍不行，尝试 <code>npx @anthropic-ai/claude-code</code>。</p>
+    </div>
+
+    <div class="trouble-box">
+        <h4>❌ 问题2：AI 没有自动创建文件，只是在终端输出了内容</h4>
+        <p><strong>原因</strong>：提示词中未明确要求“写入文件”。</p>
+        <p><strong>解决方案</strong>：检查提示词是否包含“写入到 xxx 文件”或“保存为 xxx”的明确指令。如果仍然只输出文本，可手动复制并新建文件粘贴保存。</p>
+    </div>
+
+    <div class="trouble-box">
+        <h4>❌ 问题3：学生不理解 DDL 中的外键约束</h4>
+        <p><strong>原因</strong>：第一次接触数据库设计，不熟悉。</p>
+        <p><strong>解决方案</strong>：</p>
+        <ul>
+            <li>在白板上画出五张表的关联图，用箭头标出外键指向</li>
+            <li>用“用户-设备”的例子解释：一个用户有多台设备，所以 <code>devices.user_id</code> 指向 <code>users.id</code></li>
+            <li>强调 <code>ON DELETE CASCADE</code> 的含义：删除用户时自动删除其所有数据，保证数据一致性</li>
+        </ul>
+    </div>
+
+    <div class="trouble-box">
+        <h4>❌ 问题4：学生不理解“为什么今天就要设计数据库”</h4>
+        <p><strong>原因</strong>：习惯了“先写代码再想数据”的开发方式。</p>
+        <p><strong>解决方案</strong>：</p>
+        <ul>
+            <li>强调“数据库优先”的核心理念：先确定数据模型，再围绕它开发 API</li>
+            <li>类比：盖房子先画图纸（ER图）再施工（写代码）</li>
+            <li>强调第2节就要用今天的 DDL 创建数据库，如果今天没设计好，下节课就无法继续</li>
+        </ul>
+    </div>
+
+    <div class="trouble-box">
+        <h4>❌ 问题5：<code>/init</code> 命令生成的 CLAUDE.md 内容不完整</h4>
+        <p><strong>原因</strong>：/init 生成的是基础模板，需要人工补充规范内容。</p>
+        <p><strong>解决方案</strong>：提醒学生使用教师提供的规范模板进行合并，可以通过 Claude 提示词“请将以下规范内容合并到 CLAUDE.md 中”来完成，或者手动复制粘贴。</p>
+    </div>
+
+    <!-- ========== 八、课堂验收标准 ========= -->
+    <h2>📌 八、课堂验收标准（下课前5分钟）</h2>
+
+    <div class="teacher-talk" style="background:#e8f0fe;">
+        <ul>
+            <li>✅ <code>sleep-care</code> 文件夹存在，SCM 面板显示仓库已初始化</li>
+            <li>✅ 项目根目录下存在 <code>.gitignore</code> 文件（由 AI 自动生成）</li>
+            <li>✅ <code>docs/</code> 目录下存在 <code>MVP功能清单.md</code>、<code>系统架构图.md</code>、<code>数据库设计.md</code></li>
+            <li>✅ <code>数据库设计.md</code> 包含五张表的 <strong>Mermaid ER 图</strong> 和 <strong>完整的 SQLite DDL 建表语句</strong></li>
+            <li>✅ <strong>【核心】学生能说出五张表的名称，能解释至少两张表之间的关联关系（如 users → devices 的一对多关系）</strong></li>
+            <li>✅ <strong>【核心】学生能理解 DDL 中至少3种约束的含义（PRIMARY KEY / FOREIGN KEY / UNIQUE / DEFAULT / NOT NULL）</strong></li>
+            <li>✅ <strong>【新增】项目根目录存在 <code>CLAUDE.md</code> 文件，内容包含技术栈约束、数据库规范、API设计规范、代码规范、注释规范、AI行为约束六大块</strong></li>
+            <li>✅ 通过 SCM 面板查看提交历史，能看到至少三条提交记录（<code>chore: 添加gitignore</code>、<code>docs: 需求文档、架构设计与数据库DDL</code>、<code>docs: ... 及项目规范 CLAUDE.md</code>）</li>
+            <li>✅ （可选）远程仓库已有初始推送</li>
+        </ul>
+        <p><strong>教师随机抽查3-5名学生，要求解释五张表的结构和关联关系，并说明 CLAUDE.md 的作用，验证不是“无脑复制”。</strong></p>
+    </div>
+
+    <!-- ========== 九、结语与预习 ========= -->
+    <h2>🔚 九、结语与预习（教师口述，约2分钟）</h2>
+
+    <div class="teacher-talk">
+        今天大家完成了开发环境的准备、项目设计的书面工作，以及<strong>最重要的——数据库设计（五张核心表的ER图和DDL建表语句）</strong>，并且还创建了<strong>项目规范文件 CLAUDE.md</strong>，为后续 AI 辅助开发设定了统一约束。<br><br>
+        从下一节开始，我们将真正编写代码——<strong>用 SQLite 创建今天设计的五张表，然后实现用户注册登录（JWT + bcrypt 密码加密）</strong>。因为今天已经设计好了表结构，下节课可以直接运行 DDL，无缝衔接。<br><br>
+        <strong>📚 预习内容（5分钟即可）：</strong><br>
+        - 浏览 Express 官方文档前两节：Hello World 示例<br>
+        - 了解 SQLite 的基本概念（文件型数据库，零配置）<br>
+        - 回顾 bcrypt 密码哈希的概念（第2节会用到）<br>
+        - 简单浏览 CLAUDE.md 中的规范，了解后续开发要遵循的约定<br><br>
+        下节课我们将现场用 AI 生成第一个 API 接口。下课！
+    </div>
+
+    <!-- ========== 十、附录：教师课前准备清单 ========= -->
+    <h2>📦 十、附录：教师课前准备清单</h2>
+
+    <ul>
+        <li>确认学生机均安装 Node.js 18+、Git、VSCode、微信开发者工具</li>
+        <li>确认 Claude Code 扩展已安装，并测试终端 <code>claude</code> 命令可用</li>
+        <li>准备一个远程 Git 仓库地址（可选，如有校内 GitLab 更好）</li>
+        <li>打印或投屏“学生动手任务清单”供学生参照</li>
+        <li>将实训需求文档（.docx）提前发给学生，或告知学生从指定位置复制</li>
+        <li><strong>准备五张核心表的关系图（白板或文档）</strong>，以便在学生不理解时辅助讲解</li>
+        <li><strong>准备 DDL 中常见约束的示例说明</strong>（PRIMARY KEY / FOREIGN KEY / UNIQUE / DEFAULT / NOT NULL）</li>
+        <li><strong>准备好完整的 CLAUDE.md 规范模板</strong>，供学生合并使用（可提供文本文件或直接展示在投影上）</li>
+    </ul>
+
+    <hr>
+    <footer>
+        东莞职业技术学院 · 产业教师项目实训 | 基于AI辅助开发 + 代码走读解析<br>
+        第1大节讲义 · V3.1版（新增项目规范文件） | 适配直接教学与打印
+    </footer>
+</div>
+</body>
+</html>

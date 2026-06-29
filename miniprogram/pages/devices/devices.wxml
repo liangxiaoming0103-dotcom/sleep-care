@@ -1,0 +1,45 @@
+<!--pages/devices/devices.wxml-->
+<!-- 设备管理页面：设备列表 + 添加虚拟设备 -->
+
+<view class="devices-container">
+  <!-- 设备列表 -->
+  <view class="device-list">
+    <view
+      wx:for="{{devices}}"
+      wx:key="id"
+      class="device-card"
+    >
+      <!-- 4. 删除按钮（卡片右上角） -->
+      <view
+        class="delete-btn"
+        data-id="{{item.id}}"
+        bindtap="handleDelete"
+      >🗑</view>
+
+      <!-- 设备信息 -->
+      <view class="device-info">
+        <!-- 2. 设备昵称 -->
+        <text class="device-nickname">{{item.nickname}}</text>
+        <!-- 序列号 -->
+        <text class="device-serial">序列号：{{item.serial_no}}</text>
+        <!-- 3. 在线状态（圆点脉冲 + 徽章样式） -->
+        <view class="device-status {{item.online_status === 1 ? 'status-badge-online' : 'status-badge-offline'}}">
+          <view class="status-dot {{item.online_status === 1 ? 'dot-online' : 'dot-offline'}}"></view>
+          <text class="status-text">{{item.online_status === 1 ? '在线' : '离线'}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 无设备时的空状态 -->
+    <view wx:if="{{devices.length === 0}}" class="empty-state">
+      <text class="empty-icon">📱</text>
+      <text class="empty-text">暂无设备</text>
+      <text class="empty-hint">点击下方按钮添加您的第一台设备</text>
+    </view>
+  </view>
+
+  <!-- 5. 底部添加按钮 -->
+  <view class="bottom-bar">
+    <button class="add-btn" bindtap="handleAddDevice">＋ 添加虚拟设备</button>
+  </view>
+</view>

@@ -1,0 +1,1624 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>第3大节教学讲义：虚拟设备管理API（SQLite版）+ 小程序登录页</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #eef2f7;
+            font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', system-ui, -apple-system, sans-serif;
+            padding: 40px 20px;
+            color: #1a2c3e;
+            line-height: 1.6;
+        }
+        .document-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
+            padding: 48px 48px;
+        }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .document-container { box-shadow: none; padding: 0.2in; max-width: 100%; border-radius: 0; }
+            .page-break { page-break-before: always; }
+            .no-break { page-break-inside: avoid; }
+            h2, h3, .task-card { page-break-after: avoid; }
+            pre, .code-block { page-break-inside: avoid; }
+            .version-badge { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+            .teacher-talk, .code-walkthrough, .knowledge-box { page-break-inside: avoid; }
+        }
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #155e7a, #0f3b4f);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            border-left: 5px solid #2c7da0;
+            padding-left: 20px;
+            margin-bottom: 6px;
+        }
+        .version-badge {
+            display: inline-block;
+            background: #d97706;
+            color: white;
+            font-size: 13px;
+            font-weight: 700;
+            padding: 2px 14px;
+            border-radius: 30px;
+            margin-left: 16px;
+            vertical-align: middle;
+        }
+        .sub {
+            color: #2c5f7a;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #cbdde9;
+            padding-bottom: 12px;
+            font-size: 16px;
+        }
+        .meta-bar {
+            background: #e6f4fa;
+            border-radius: 20px;
+            padding: 14px 24px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin: 20px 0 30px;
+        }
+        .meta-item { flex: 1; min-width: 160px; }
+        .meta-label { font-weight: 700; font-size: 13px; letter-spacing: 0.5px; color: #0a5c7e; }
+        .meta-value { font-weight: 500; margin-top: 6px; font-size: 15px; }
+        .update-log {
+            background: #fffbeb;
+            border: 1px solid #fcd34d;
+            border-radius: 16px;
+            padding: 16px 20px;
+            margin: 16px 0 24px;
+        }
+        .update-log h4 { color: #92400e; margin-bottom: 8px; font-size: 16px; }
+        .update-log ul { margin-left: 20px; color: #78350f; }
+        .update-log ul li { margin: 4px 0; }
+        h2 {
+            font-size: 24px;
+            margin-top: 36px;
+            margin-bottom: 16px;
+            background: #eef2fa;
+            display: inline-block;
+            padding: 4px 20px;
+            border-radius: 40px;
+            color: #155e75;
+            font-weight: 600;
+        }
+        h3 {
+            font-size: 20px;
+            margin: 28px 0 12px 0;
+            color: #1f6e8c;
+            border-left: 4px solid #3b82f6;
+            padding-left: 14px;
+        }
+        h4 {
+            font-size: 18px;
+            margin: 20px 0 10px;
+            color: #2c7da0;
+        }
+        .teacher-talk {
+            background: #fefce8;
+            border-left: 5px solid #eab308;
+            padding: 16px 20px;
+            margin: 20px 0;
+            border-radius: 16px;
+            font-style: normal;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        }
+        .teacher-talk strong { color: #b45309; }
+        .code-walkthrough {
+            background: #e8f0fe;
+            border-left: 5px solid #3b82f6;
+            padding: 16px 20px;
+            margin: 16px 0;
+            border-radius: 16px;
+            font-style: normal;
+        }
+        .code-walkthrough strong { color: #1e40af; }
+        .code-walkthrough ul { margin-top: 8px; padding-left: 20px; }
+        .code-walkthrough ul li { margin: 6px 0; }
+        .code-walkthrough .code-block { margin-top: 8px; }
+        .knowledge-box {
+            background: #f0f7fe;
+            border-left: 4px solid #3b82f6;
+            padding: 12px 16px;
+            margin: 12px 0;
+            border-radius: 8px;
+        }
+        .knowledge-box strong { color: #1e40af; }
+        .knowledge-box ul { margin-top: 6px; padding-left: 20px; }
+        .knowledge-box ul li { margin: 4px 0; }
+        .task-card {
+            background: #f9fbfe;
+            border-radius: 20px;
+            margin: 20px 0;
+            border: 1px solid #e2edf2;
+            overflow: hidden;
+            break-inside: avoid;
+        }
+        .task-header {
+            background: #f0f6fa;
+            padding: 12px 20px;
+            font-weight: 700;
+            font-size: 18px;
+            border-bottom: 1px solid #dce5ec;
+            color: #0c4a6e;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+        .task-header .time-tag {
+            font-weight: 400;
+            font-size: 14px;
+            color: #5e7e9e;
+            background: #e2edf2;
+            padding: 2px 12px;
+            border-radius: 30px;
+        }
+        .task-body { padding: 18px 22px; }
+        .step-list { margin-top: 12px; padding-left: 20px; list-style-type: decimal; }
+        .step-list li { margin: 10px 0; }
+        .step-list li strong { color: #0c4a6e; }
+        .code-block {
+            background: #1e2a3a;
+            color: #e2e8f0;
+            padding: 12px 16px;
+            border-radius: 14px;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin: 12px 0;
+        }
+        .gui-step {
+            background: #f0f7fe;
+            border-left: 3px solid #2563eb;
+            padding: 12px 16px;
+            margin: 12px 0;
+            border-radius: 12px;
+        }
+        .gui-step strong { color: #1e40af; }
+        code {
+            background: #eef2f6;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 18px 0;
+        }
+        th, td {
+            border: 1px solid #cbd5e1;
+            padding: 8px 12px;
+            vertical-align: top;
+        }
+        th { background: #e2edf2; font-weight: 600; }
+        .badge {
+            background: #2c7da0;
+            color: white;
+            border-radius: 40px;
+            padding: 2px 12px;
+            font-size: 12px;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .badge-warn {
+            background: #d97706;
+            color: white;
+            border-radius: 40px;
+            padding: 2px 12px;
+            font-size: 12px;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .badge-green {
+            background: #16a34a;
+            color: white;
+            border-radius: 40px;
+            padding: 2px 12px;
+            font-size: 12px;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .badge-blue {
+            background: #3b82f6;
+            color: white;
+            border-radius: 40px;
+            padding: 2px 12px;
+            font-size: 12px;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .badge-purple {
+            background: #8b5cf6;
+            color: white;
+            border-radius: 40px;
+            padding: 2px 12px;
+            font-size: 12px;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .checklist {
+            background: #f0f9f4;
+            padding: 16px 20px;
+            border-radius: 20px;
+            margin: 16px 0;
+        }
+        .checklist li { margin: 6px 0; }
+        .trouble-box {
+            background: #fef2f2;
+            border: 1px solid #fca5a5;
+            border-radius: 16px;
+            padding: 16px 20px;
+            margin: 16px 0;
+        }
+        .trouble-box h4 { color: #b91c1c; margin-top: 0; }
+        .trouble-box strong { color: #b91c1c; }
+        .prompt-box {
+            background: #f0fdf4;
+            border-left: 4px solid #22c55e;
+            padding: 12px 16px;
+            margin: 10px 0;
+            border-radius: 8px;
+        }
+        .step-note {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 10px 14px;
+            margin: 8px 0;
+            border: 1px solid #e2e8f0;
+            font-size: 14px;
+        }
+        .step-note .label { font-weight: 600; color: #334155; }
+        .img-placeholder {
+            background: #eef2f6;
+            border: 2px dashed #94a3b8;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            color: #64748b;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+        details summary {
+            cursor: pointer;
+            color: #2563eb;
+            font-weight: 500;
+        }
+        details summary:hover { text-decoration: underline; }
+        footer {
+            margin-top: 48px;
+            text-align: center;
+            font-size: 12px;
+            color: #5e7e9e;
+            border-top: 1px solid #cbdde9;
+            padding-top: 24px;
+        }
+        hr { margin: 24px 0; border: 0; height: 1px; background: #cbdde9; }
+        .file-structure {
+            background: #0d1117;
+            color: #e6edf3;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 13px;
+            margin: 10px 0;
+            line-height: 1.8;
+        }
+        .file-structure .folder { color: #58a6ff; }
+        .file-structure .file { color: #8b949e; }
+        .file-structure .highlight { color: #f0883e; }
+        .db-tag {
+            display: inline-block;
+            background: #dbeafe;
+            color: #1e40af;
+            font-size: 11px;
+            padding: 1px 10px;
+            border-radius: 12px;
+            font-weight: 600;
+            margin-left: 6px;
+        }
+        @media (max-width: 700px) {
+            .document-container { padding: 24px 20px; }
+            h1 { font-size: 22px; }
+            .task-header { flex-direction: column; align-items: flex-start; gap: 6px; }
+        }
+    </style>
+</head>
+<body>
+<div class="document-container">
+
+    <h1>
+        🧠 第3大节教学讲义
+        <span class="version-badge">V3.0 数据库驱动版</span>
+    </h1>
+    <div class="sub">虚拟设备管理API（SQLite持久化）+ 小程序登录页 · 基于Vibe Coding · 90分钟课程设计</div>
+
+    <div class="meta-bar">
+        <div class="meta-item"><div class="meta-label">📌 课程名称</div><div class="meta-value">智能睡眠健康管理软件实训</div></div>
+        <div class="meta-item"><div class="meta-label">⏱️ 课时</div><div class="meta-value">90分钟（讲解18' + 动手72'）</div></div>
+        <div class="meta-item"><div class="meta-label">🎯 本节主题</div><div class="meta-value">设备管理API（SQLite持久化·sql.js）· 认证中间件 · 小程序登录页</div></div>
+        <div class="meta-item"><div class="meta-label">🤖 核心工具</div><div class="meta-value">Node.js, Express, SQLite (sql.js), JWT, Claude Code, 微信开发者工具</div></div>
+    </div>
+
+    <div class="update-log">
+        <h4>📝 本节核心</h4>
+        <ul>
+            <li><strong>SQLite 持久化（</strong>：设备数据直接读写 <code>devices</code> 表，与第1节ER图完全对齐，服务器重启数据不丢失</li>
+            <li><strong>数据关联</strong>：设备通过 <code>user_id</code> 外键关联用户，实现数据隔离（用户只能操作自己的设备）</li>
+            <li><strong>认证中间件</strong>：从第2节已实现的 <code>authenticateToken</code> 理解 Token 验证流程，保护所有设备接口</li>
+            <li><strong>小程序登录</strong>：调用后端登录接口，存储 Token，实现“登录态持久化”</li>
+            <li><strong>显式持久化</strong>：每次写操作后必须调用 <code>saveDb()</code> 将内存数据导出到磁盘文件</li>
+            <li><strong>Vibe Coding + 代码走读</strong>：先解析技术原理，再用 AI 生成代码，最后逐行走读理解</li>
+        </ul>
+    </div>
+
+    <!-- ========== 一、课程导入 ========= -->
+    <h2>📖 一、课程导入</h2>
+
+    <div class="teacher-talk">
+        <strong>🎤 教师口述（3分钟）</strong><br>
+        同学们，上节课我们用 Express 搭建了后端服务，实现了用户注册和登录接口，并生成了 JWT 令牌。更关键的是，我们将用户数据 <strong>持久化到了 SQLite 数据库</strong>——即使服务器重启，用户也不会丢失。<br><br>
+        今天我们要做两件大事：<br><br>
+        <strong>第一件</strong>：给后端加上“设备管理”功能。用户登录后可以添加虚拟设备、查看设备列表、修改设备昵称、删除设备。所有设备数据将直接写入 SQLite 的 <code>devices</code> 表，与第1节设计的 ER 图完全对齐。<br><br>
+        <strong>第二件</strong>：开始写微信小程序！我们要创建一个小程序项目，实现登录页面，调用第2节的登录接口，成功后将返回的 Token 保存到本地缓存，供后续请求使用。<br><br>
+        <strong>为什么今天要做这两件事？</strong> 因为它们紧密相关——小程序登录成功后获得 Token，后续设备管理的所有 API 都需要带上这个 Token 来验证身份。今天就是把“前后端打通”的关键一步。
+    </div>
+
+    <h2>🎯 二、教学目标</h2>
+
+    <div class="teacher-talk" style="background:#f0f7fe; border-left-color:#3b82f6;">
+        <strong>📌 学完本节，你能够：</strong>
+        <ul style="margin-top: 10px; margin-left: 20px;">
+            <li>理解 JWT 认证中间件的工作原理——如何从请求头提取并验证 Token</li>
+            <li>掌握 <code>devices</code> 表的字段设计（<code>serial_no</code>、<code>user_id</code>、<code>nickname</code>、<code>online_status</code> 等），并在代码中正确映射</li>
+            <li>用 Claude 生成设备管理的 CRUD 接口（列表、添加、修改、删除），<strong>全部使用 SQLite数据库操作</strong></li>
+            <li>理解 RESTful API 的设计规范（GET /list, POST /add, PUT /update, DELETE /delete）</li>
+            <li>在微信开发者工具中创建小程序项目，理解项目结构和页面四文件（.wxml / .wxss / .js / .json）</li>
+            <li>实现小程序登录页，调用后端登录接口，存储 Token 到本地缓存</li>
+            <li><strong>理解 AI 生成的每一段代码</strong>——能解释认证中间件的作用、设备 API 的数据库操作逻辑</li>
+            <li><strong>理解 <code>saveDb()</code> 的关键作用</strong>——显式持久化数据到磁盘</li>
+        </ul>
+    </div>
+
+    <!-- ========== 三、知识讲解 ========= -->
+    <h2>📋 三、知识讲解（教师口述 + 白板，约10分钟）</h2>
+
+    <h3>3.1 JWT 认证中间件复习（约3分钟）</h3>
+
+    <div class="teacher-talk" style="background:#f0f7fe; border-left-color:#3b82f6;">
+        <strong>💡 教师口述</strong><br>
+        上节课我们实现了登录接口，它会返回一个 JWT 令牌给客户端。但问题是：<strong>客户端后续请求怎么证明自己已经登录了？</strong><br><br>
+        答案就是：客户端在每次请求的 HTTP Header 中带上这个 Token，格式为：<br>
+        <code>Authorization: Bearer &lt;token&gt;</code><br><br>
+        服务端需要一个“认证中间件”——它会在请求到达具体接口之前，先拦截下来，做三件事：<br>
+        1. 从请求头中提取 Token<br>
+        2. 验证 Token 的签名是否有效（用我们保存的 JWT_SECRET）<br>
+        3. 如果有效，把 Token 中存储的用户信息（如 <code>id</code>、<code>phone</code>）挂载到 <code>req.user</code> 上，放行请求；如果无效，直接返回 401 或 403。<br><br>
+        在第2节中，我们已经用 Claude 生成了 <code>authenticateToken</code> 中间件。今天我们会直接在设备接口中使用它。<br>
+        <span class="badge-blue">💡 关键</span> <code>req.user</code> 中包含 <code>id</code>（用户ID），后续设备操作中我们需要用这个 <code>id</code> 来关联设备，实现数据隔离。
+    </div>
+
+    <h3>3.2 设备表（devices）设计回顾（约2分钟）</h3>
+
+    <div class="teacher-talk" style="background:#f0f7fe; border-left-color:#3b82f6;">
+        <strong>💡 教师口述</strong><br>
+        根据第1节设计的数据库ER图，<code>devices</code> 表通过 <code>user_id</code> 外键关联 <code>users</code> 表，存储用户绑定的设备信息：
+        <table>
+            <thead><tr><th>字段名</th><th>类型</th><th>约束</th><th>说明</th></tr></thead>
+            <tbody>
+                <tr><td><code>id</code></td><td>INTEGER</td><td>PRIMARY KEY, AUTO_INCREMENT</td><td>设备主键，自增</td></tr>
+                <tr><td><code>serial_no</code></td><td>TEXT</td><td>UNIQUE, NOT NULL</td><td>设备序列号（VIR+16位随机）</td></tr>
+                <tr><td><code>user_id</code></td><td>INTEGER</td><td>FOREIGN KEY → users.id</td><td>所属用户ID</td></tr>
+                <tr><td><code>nickname</code></td><td>TEXT</td><td>DEFAULT '我的设备'</td><td>用户自定义昵称</td></tr>
+                <tr><td><code>is_virtual</code></td><td>INTEGER</td><td>DEFAULT 1</td><td>是否虚拟设备（1是/0否）</td></tr>
+                <tr><td><code>online_status</code></td><td>INTEGER</td><td>DEFAULT 1</td><td>在线状态（1在线/0离线）</td></tr>
+                <tr><td><code>created_at</code></td><td>TEXT</td><td>DEFAULT (datetime('now'))</td><td>绑定时间</td></tr>
+                <tr><td><code>updated_at</code></td><td>TEXT</td><td>DEFAULT (datetime('now'))</td><td>更新时间</td></tr>
+            </tbody>
+        </table>
+        <p><span class="badge-blue">🔗 对齐策略</span> 今天的设备接口将直接操作这张表：<code>INSERT INTO devices</code>、<code>SELECT FROM devices WHERE user_id = ?</code>、<code>UPDATE devices</code>、<code>DELETE FROM devices</code>。</p>
+        <p><span class="badge-warn">⚠️ 注意</span> <code>datetime('now')</code> 函数返回当前 UTC 时间字符串，与 SQLite 标准一致。</p>
+    </div>
+
+    <h3>3.3 RESTful API 设计规范（约2分钟）</h3>
+
+    <div class="teacher-talk" style="background:#f0f7fe; border-left-color:#3b82f6;">
+        <strong>💡 教师口述</strong><br>
+        今天我们实现的设备管理接口遵循 RESTful 规范：<br>
+        <table>
+            <tr><th>操作</th><th>方法</th><th>路径</th><th>说明</th></tr>
+            <tr><td>查询列表</td><td>GET</td><td><code>/api/device/list</code></td><td>获取当前用户的设备列表</td></tr>
+            <tr><td>添加设备</td><td>POST</td><td><code>/api/device/add</code></td><td>手动添加或生成虚拟设备</td></tr>
+            <tr><td>修改设备</td><td>PUT</td><td><code>/api/devices/:id</code></td><td>按主键修改设备昵称</td></tr>
+            <tr><td>删除设备</td><td>DELETE</td><td><code>/api/devices/:id</code></td><td>按主键删除设备</td></tr>
+        </table>
+        <strong>关键设计</strong>：所有设备操作都关联当前登录用户（从 Token 中取 <code>req.user.id</code>），用户只能操作自己的设备。
+    </div>
+
+    <h3>3.4 微信小程序基础架构（约3分钟）</h3>
+
+    <div class="teacher-talk" style="background:#f0f7fe; border-left-color:#3b82f6;">
+        <strong>💡 教师口述</strong><br>
+        微信小程序不是普通的网页，它有自己的架构：<br><br>
+        <ul>
+            <li><strong>app.json</strong>：全局配置文件，定义所有页面路径、窗口样式、tabBar 等。</li>
+            <li><strong>app.js</strong>：全局逻辑文件，定义 <code>globalData</code>（全局数据）和生命周期函数。</li>
+            <li><strong>页面（pages）</strong>：每个页面是一个文件夹，包含四个文件：<br>
+                &nbsp;&nbsp;- <code>.wxml</code>：页面结构（类似 HTML）<br>
+                &nbsp;&nbsp;- <code>.wxss</code>：页面样式（类似 CSS）<br>
+                &nbsp;&nbsp;- <code>.js</code>：页面逻辑<br>
+                &nbsp;&nbsp;- <code>.json</code>：页面配置<br>
+            </li>
+            <li><strong>wx.request</strong>：小程序发 HTTP 请求的 API，类似于浏览器中的 fetch。</li>
+            <li><strong>wx.setStorageSync / wx.getStorageSync</strong>：同步读写本地缓存，我们用它来存储 Token。</li>
+        </ul>
+        今天我们会创建登录页和设备管理页。
+    </div>
+
+    <!-- ========== 四、学生动手任务清单 ========= -->
+    <h2>🛠️ 四、学生动手任务清单（Step-by-Step + 代码走读）</h2>
+
+    <p>以下任务分为两大部分：<strong>A. 后端设备管理API</strong>（约25分钟）、<strong>B. 小程序登录页 + 设备页</strong>（约47分钟）。</p>
+
+    <!-- ========== A. 后端部分 ========= -->
+    <h3 style="margin-top:30px;">A. 后端：虚拟设备管理API（SQLite持久化）</h3>
+
+    <!-- A-任务1：理解已有认证中间件 -->
+    <div class="task-card">
+        <div class="task-header">
+            <span>✅ A-任务1：理解已有认证中间件（代码走读）</span>
+            <span class="time-tag">⏱️ 5分钟</span>
+        </div>
+        <div class="task-body">
+
+            <div class="knowledge-box">
+                <strong>📚 前置知识：认证中间件已在第2节实现</strong><br>
+                在第2节中，我们已经通过 Claude 在 <code>backend/app.js</code> 中生成了 <code>authenticateToken</code> 中间件。<br>
+                今天我们不重新生成它，而是 <strong>理解它、使用它</strong>——所有设备接口都会在路由中引用这个中间件。
+            </div>
+
+            <div class="code-walkthrough">
+                <strong>🔍 代码走读：已有的 authenticateToken 中间件</strong>
+                <div class="code-block" style="font-size:12px;">
+// JWT认证中间件（已在 app.js 中）
+function authenticateToken(req, res, next) {
+    // 1. 从请求头获取 Authorization
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    // 2. 如果没有 Token
+    if (!token) {
+        return res.status(401).json({
+            code: 401,
+            message: '未提供认证令牌',
+            data: null
+        });
+    }
+
+    // 3. 验证 Token
+    jwt.verify(token, JWT_SECRET, (err, decoded) => {
+        if (err) {
+            return res.status(403).json({
+                code: 403,
+                message: '令牌无效或已过期',
+                data: null
+            });
+        }
+        // 4. 验证通过，挂载用户信息到 req.user
+        req.user = decoded;
+        next();
+    });
+}
+                </div>
+                <ul>
+                    <li><strong><code>req.headers['authorization']</code></strong>：从请求头中获取 <code>Authorization</code> 字段。</li>
+                    <li><strong><code>authHeader && authHeader.split(' ')[1]</code></strong>：按空格分割，取第二部分（即 Token 本身）。</li>
+                    <li><strong><code>jwt.verify(token, JWT_SECRET, ...)</code></strong>：验证 Token 签名和有效期。验证通过后，<code>decoded</code> 就是 JWT payload（包含 <code>id</code>、<code>phone</code>、<code>role</code>）。</li>
+                    <li><strong><code>req.user = decoded</code></strong>：将用户信息挂载到请求对象上。后续路由通过 <code>req.user.id</code> 获取当前用户ID。</li>
+                </ul>
+                <p><span class="badge-blue">💡 重点理解</span> 这个中间件是“受保护路由”的守门员。所有需要登录才能操作的接口（如设备管理），都要在路由定义中作为第二个参数传入 <code>authenticateToken</code>。</p>
+            </div>
+
+            <div class="gui-step">
+                <strong>✅ 确认：</strong> 打开 <code>backend/app.js</code>，找到 <code>authenticateToken</code> 函数定义，理解其逻辑。如果缺失，用第2节的方法让 Claude 补上。
+            </div>
+        </div>
+    </div>
+
+    <!-- A-任务2：确认 devices 表已在数据库中创建 -->
+    <div class="task-card">
+        <div class="task-header">
+            <span>✅ A-任务2：确认 devices 表已在数据库中创建</span>
+            <span class="time-tag">⏱️ 5分钟</span>
+        </div>
+        <div class="task-body">
+
+            <div class="knowledge-box">
+                <strong>📚 前置知识：devices 表应在第2节已创建</strong><br>
+                在第2节中，<code>db/schema.js</code> 已经包含了所有表的 DDL 建表语句。请确认 <code>devices</code> 表的 CREATE TABLE 语句是否存在。
+            </div>
+
+            <ol class="step-list">
+                <li>
+                    <strong>打开 <code>backend/db/schema.js</code></strong><br>
+                    检查文件中是否包含 <code>CREATE TABLE devices</code> 语句。
+                </li>
+                <li>
+                    <strong>如果缺失，用 Claude 补充</strong><br>
+                    在 Claude 中输入提示词：
+                    <div class="prompt-box">
+                        <strong>📝 提示词：</strong><br>
+                        请在 backend/db/schema.js 的 initSchema 函数中添加 devices 表的建表语句，字段如下：<br>
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,<br>
+                        serial_no TEXT NOT NULL UNIQUE,<br>
+                        user_id INTEGER NOT NULL,<br>
+                        nickname TEXT NOT NULL DEFAULT '我的设备',<br>
+                        is_virtual INTEGER NOT NULL DEFAULT 1,<br>
+                        online_status INTEGER NOT NULL DEFAULT 1,<br>
+                        created_at TEXT NOT NULL DEFAULT (datetime('now')),<br>
+                        updated_at TEXT NOT NULL DEFAULT (datetime('now')),<br>
+                        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE<br>
+                        使用 CREATE TABLE IF NOT EXISTS 确保幂等性。
+                    </div>
+                </li>
+                <li>
+                    <strong>验证表已创建</strong><br>
+                    重启服务器（Ctrl+C 后重新 npm run dev），或用 SQLite 插件查看数据库，确认 <code>devices</code> 表存在。
+                </li>
+            </ol>
+
+            <div class="code-walkthrough">
+                <strong>🔍 代码走读：devices 表 DDL</strong>
+                <div class="code-block" style="font-size:12px;">
+CREATE TABLE IF NOT EXISTS devices (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    serial_no TEXT NOT NULL UNIQUE,
+    user_id INTEGER NOT NULL,
+    nickname TEXT NOT NULL DEFAULT '我的设备',
+    is_virtual INTEGER NOT NULL DEFAULT 1,
+    online_status INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+                </div>
+                <ul>
+                    <li><strong><code>serial_no UNIQUE</code></strong>：每个设备序列号全局唯一，防止重复绑定。</li>
+                    <li><strong><code>user_id NOT NULL</code></strong>：每个设备必须关联一个用户，通过 <code>ON DELETE CASCADE</code> 实现级联删除。</li>
+                    <li><strong><code>is_virtual DEFAULT 1</code></strong>：默认虚拟设备，与 MVP 阶段一致。</li>
+                    <li><strong><code>online_status DEFAULT 1</code></strong>：虚拟设备默认在线，简化逻辑。</li>
+                    <li><strong><code>datetime('now')</code></strong>：使用 SQLite 内置函数生成当前时间字符串。</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- A-任务3：用Claude生成设备管理CRUD接口（SQLite版） -->
+    <div class="task-card">
+        <div class="task-header">
+            <span>✅ A-任务3：用Claude生成设备管理CRUD接口（SQLite版）</span>
+            <span class="time-tag">⏱️ 15分钟</span>
+        </div>
+        <div class="task-body">
+
+            <div class="knowledge-box">
+                <strong>📚 前置知识：设备管理接口的数据库操作</strong><br>
+                今天的所有设备接口都直接操作 SQLite 的 <code>devices</code> 表，而不是内存数组。每个接口都需要：<br>
+                <ul>
+                    <li>使用 <code>authenticateToken</code> 中间件保护</li>
+                    <li>从 <code>req.user.id</code> 获取当前用户ID</li>
+                    <li>使用 <code>dbGetOne</code> / <code>dbGetAll</code> 辅助函数执行查询（已在 app.js 中定义）</li>
+                    <li>使用 <code>db.run()</code> 执行插入/更新/删除</li>
+                    <li><strong>关键</strong>：每次写操作后调用 <code>saveDb()</code> 将内存数据持久化到磁盘文件 <code>sleep_care.db</code></li>
+                </ul>
+                <p>数据库操作在内存中进行，<strong>必须显式调用 <code>saveDb()</code></strong> 才能将更改写入磁盘。这是 sql.js 的核心特性，也是初学者容易遗漏的关键步骤。</p>
+            </div>
+
+            <ol class="step-list">
+                <li>
+                    <strong>在Claude中继续对话</strong><br>
+                    确保 Claude 会话还在运行。
+                </li>
+                <li>
+                    <strong>输入提示词生成设备管理接口</strong><br>
+                    在 Claude 中输入：
+                    <div class="prompt-box">
+                        <strong>📝 提示词：</strong><br>
+                        请修改 backend/app.js，在认证中间件之后添加设备管理功能（SQLite数据库版，基于 sql.js），要求：<br><br>
+                        1. 所有接口必须使用 authenticateToken 中间件保护<br>
+                        2. 从 req.user.id 获取当前用户ID<br>
+                        3. 使用 dbGetOne / dbGetAll 辅助函数执行查询（已在 app.js 中定义），使用 db.run 执行插入/更新/删除<br>
+                        4. 每个写操作（INSERT/UPDATE/DELETE）后调用 saveDb() 持久化到磁盘<br><br>
+                        a) GET /api/device/list：<br>
+                        &nbsp;&nbsp;- 执行 SELECT * FROM devices WHERE user_id = ? ORDER BY created_at DESC<br>
+                        &nbsp;&nbsp;- 使用 dbGetAll 返回结果列表<br><br>
+                        b) POST /api/device/add：<br>
+                        &nbsp;&nbsp;- 接收参数：device_serial（可选），is_virtual（布尔值）<br>
+                        &nbsp;&nbsp;- 如果 is_virtual === true：自动生成 serial_no = "VIR" + 16位随机字符<br>
+                        &nbsp;&nbsp;- 如果传入了 device_serial：直接使用（校验为16位字母数字）<br>
+                        &nbsp;&nbsp;- 执行 INSERT INTO devices (user_id, serial_no, nickname, is_virtual, online_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)<br>
+                        &nbsp;&nbsp;- 捕获 UNIQUE 约束异常（序列号重复）<br>
+                        &nbsp;&nbsp;- 返回新设备（用 dbGetOne 按 serial_no 查询）<br><br>
+                        c) PUT /api/devices/:id：<br>
+                        &nbsp;&nbsp;- 从路径参数获取 device_id，从 body 获取 nickname<br>
+                        &nbsp;&nbsp;- 先 SELECT 验证该设备属于当前用户<br>
+                        &nbsp;&nbsp;- 执行 UPDATE devices SET nickname = ?, updated_at = ? WHERE id = ?<br>
+                        &nbsp;&nbsp;- 返回更新后的设备<br><br>
+                        d) DELETE /api/devices/:id：<br>
+                        &nbsp;&nbsp;- 从路径参数获取 device_id<br>
+                        &nbsp;&nbsp;- 先 SELECT 验证该设备属于当前用户<br>
+                        &nbsp;&nbsp;- 执行 DELETE FROM devices WHERE id = ?<br>
+                        &nbsp;&nbsp;- 返回删除成功
+                    </div>
+                    AI 会自动修改 <code>app.js</code>，添加设备管理接口。由于 nodemon 在运行，服务器会自动重启。
+                </li>
+                <li>
+                    <strong>测试设备管理接口（用Postman）</strong><br>
+                    <span class="step-note"><span class="label">⚠️ 重要</span> 因为接口需要认证，在 Postman 中测试时，需要先调用登录接口获取 Token，然后在请求头中添加 <code>Authorization: Bearer &lt;token&gt;</code>。</span><br>
+                    步骤：
+                    <ul style="padding-left: 20px; margin-top:8px;">
+                        <li>先调用 POST <code>http://localhost:3000/api/auth/login</code>，获取 token</li>
+                        <li>在 Postman 的请求头（Headers）中，添加 key: <code>Authorization</code>，value: <code>Bearer 你获取的token</code></li>
+                        <li>测试 GET <code>http://localhost:3000/api/device/list</code>（应返回空数组或已有设备）</li>
+                        <li>测试 POST <code>http://localhost:3000/api/device/add</code>，Body JSON: <code>{"is_virtual": true}</code></li>
+                        <li>再次 GET 列表验证新增</li>
+                        <li><strong>验证持久化</strong>：添加设备后，检查项目根目录的 <code>sleep_care.db</code> 文件是否更新（可用 SQLite 插件查看）</li>
+                        <li><strong>验证重启</strong>：重启服务器，再次 GET 列表，确认数据仍然存在</li>
+                    </ul>
+                    <span class="step-note"><span class="label">✅ 预期</span> 添加虚拟设备后，列表接口应返回包含该设备的数组，字段包含 <code>serial_no</code>、<code>nickname</code>、<code>online_status</code> 等。重启服务器后数据不丢失。</span>
+                </li>
+            </ol>
+
+            <div class="code-walkthrough">
+                <strong>🔍 代码走读：设备管理接口（SQLite版，基于 sql.js）</strong>
+
+                <p><strong>1. 列表接口 (GET /list)</strong></p>
+                <div class="code-block" style="font-size:12px;">
+app.get('/api/device/list', authenticateToken, async (req, res) => {
+    const userId = req.user.id;
+    const db = await getDb();  // sql.js 的 getDb() 是异步的
+    const devices = dbGetAll(
+        db,
+        'SELECT * FROM devices WHERE user_id = ? ORDER BY created_at DESC',
+        [userId]
+    );
+    res.json({ code: 0, message: 'success', data: devices });
+});
+                </div>
+                <ul>
+                    <li><strong><code>authenticateToken</code></strong>：保护路由，确保只有登录用户能访问。</li>
+                    <li><strong><code>await getDb()</code></strong>：sql.js 的 <code>getDb()</code> 返回 Promise，需要使用 <code>await</code> 等待 WASM 加载完成。</li>
+                    <li><strong><code>dbGetAll</code></strong>：辅助函数，执行 SELECT 并返回所有行（已在 app.js 中定义）。</li>
+                    <li><strong><code>ORDER BY created_at DESC</code></strong>：最新添加的设备排在前面。</li>
+                    <li><strong>注意</strong>：查询操作不需要调用 <code>saveDb()</code>，因为数据没有修改。</li>
+                </ul>
+
+                <p><strong>2. 添加设备 (POST /add) — 显式持久化</strong></p>
+                <div class="code-block" style="font-size:12px;">
+app.post('/api/device/add', authenticateToken, async (req, res) => {
+    const { device_serial, is_virtual } = req.body;
+    const userId = req.user.id;
+    const db = await getDb();
+
+    let serialNo;
+    // ... 序列号生成逻辑 ...
+
+    const now = new Date().toISOString();
+    try {
+        db.run(
+            `INSERT INTO devices (user_id, serial_no, nickname, is_virtual, online_status, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [userId, serialNo, '我的设备', is_virtual ? 1 : 0, 1, now, now]
+        );
+        // ⚠️ 关键步骤：sql.js 必须显式调用 saveDb() 持久化到磁盘
+        saveDb();
+        const newDevice = dbGetOne(db, 'SELECT * FROM devices WHERE serial_no = ?', [serialNo]);
+        res.json({ code: 0, message: '添加成功', data: newDevice });
+    } catch (err) {
+        if (err.message && err.message.includes('UNIQUE constraint failed')) {
+            return res.json({ code: 1001, message: '该序列号已被绑定' });
+        }
+        console.error('[DB] add device error:', err);
+        res.json({ code: 1001, message: '添加失败' });
+    }
+});
+                </div>
+                <ul>
+                    <li><strong><code>db.run()</code></strong>：执行 INSERT 操作，参数化查询防止 SQL 注入。</li>
+                    <li><strong><code>saveDb()</code></strong>：<strong>关键步骤</strong>——sql.js 的数据在内存中，调用 <code>saveDb()</code> 将内存数据库导出为二进制数据并写入 <code>sleep_care.db</code> 文件。如果忘记调用，数据会在服务器重启后丢失。</li>
+                    <li><strong><code>UNIQUE constraint failed</code></strong>：捕获序列号冲突异常，返回友好错误。</li>
+                </ul>
+
+                <p><strong>3. 修改设备 (PUT /devices/:id)</strong></p>
+                <div class="code-block" style="font-size:12px;">
+app.put('/api/devices/:id', authenticateToken, async (req, res) => {
+    const deviceId = parseInt(req.params.id, 10);
+    const { nickname } = req.body;
+    const userId = req.user.id;
+    const db = await getDb();
+
+    // 权限校验：验证设备属于当前用户
+    const device = dbGetOne(db, 'SELECT * FROM devices WHERE id = ?', [deviceId]);
+    if (!device) return res.json({ code: 1001, message: '设备不存在' });
+    if (device.user_id !== userId) return res.json({ code: 1001, message: '无权操作该设备' });
+
+    const now = new Date().toISOString();
+    db.run('UPDATE devices SET nickname = ?, updated_at = ? WHERE id = ?',
+        [nickname.trim(), now, deviceId]);
+    saveDb();  // 持久化更新
+
+    const updated = dbGetOne(db, 'SELECT * FROM devices WHERE id = ?', [deviceId]);
+    res.json({ code: 0, message: '修改成功', data: updated });
+});
+                </div>
+                <ul>
+                    <li><strong>路径参数 <code>:id</code></strong>：使用设备主键作为标识，符合 RESTful 规范。</li>
+                    <li><strong>权限校验</strong>：先查询设备，检查 <code>user_id</code> 是否匹配当前用户，防止越权操作。</li>
+                    <li><strong><code>saveDb()</code></strong>：UPDATE 后同样需要调用，确保磁盘文件同步更新。</li>
+                </ul>
+
+                <p><strong>4. 删除设备 (DELETE /devices/:id)</strong></p>
+                <div class="code-block" style="font-size:12px;">
+app.delete('/api/devices/:id', authenticateToken, async (req, res) => {
+    const deviceId = parseInt(req.params.id, 10);
+    const userId = req.user.id;
+    const db = await getDb();
+
+    const device = dbGetOne(db, 'SELECT * FROM devices WHERE id = ?', [deviceId]);
+    if (!device) return res.json({ code: 1001, message: '设备不存在' });
+    if (device.user_id !== userId) return res.json({ code: 1001, message: '无权操作该设备' });
+
+    db.run('DELETE FROM devices WHERE id = ?', [deviceId]);
+    saveDb();  // 持久化删除
+    res.json({ code: 0, message: '删除成功', data: null });
+});
+                </div>
+                <ul>
+                    <li><strong>硬删除</strong>：直接从数据库中移除记录。</li>
+                    <li><strong>权限校验</strong>：与修改接口相同，先验证所有权。</li>
+                    <li><strong><code>saveDb()</code></strong>：DELETE 后调用，确保磁盘数据与内存一致。</li>
+                </ul>
+                <p><span class="badge-blue">💡 重点理解</span> 所有数据库操作都是 <strong>用户绑定的</strong>——通过 <code>user_id</code> 过滤，确保用户只能操作自己的设备。这是多租户系统的基本设计原则。</p>
+                <p><span class="badge-warn">⚠️ 关于 <code>saveDb()</code></span>：在 <code>sql.js</code> 中，<code>saveDb()</code> 不是自动调用的。每次 INSERT、UPDATE、DELETE 后都必须显式调用，否则数据只存在于内存中，重启即丢失。这是与 <code>better-sqlite3</code> 最大的不同之处。</p>
+            </div>
+
+            <div class="gui-step">
+                <strong>✅ 操作速记：</strong> Claude中粘贴提示词 → AI自动修改app.js → 服务器自动重启 → Postman获取Token → 设置Authorization头 → 测试设备CRUD → 验证 <code>saveDb()</code> 持久化 → 重启服务器验证数据不丢失。
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== B. 前端部分 ========= -->
+    <h3 style="margin-top:30px;">B. 前端：小程序登录页 + 设备管理页</h3>
+
+    <!-- B-任务1 -->
+    <div class="task-card">
+        <div class="task-header">
+            <span>✅ B-任务1：创建微信小程序项目</span>
+            <span class="time-tag">⏱️ 12分钟</span>
+        </div>
+        <div class="task-body">
+
+            <div class="knowledge-box">
+                <strong>📚 前置知识：小程序项目结构</strong><br>
+                一个微信小程序项目的核心文件：<br>
+                <ul>
+                    <li><strong>app.json</strong>：全局配置文件，定义页面路径、导航栏样式、tabBar 等。</li>
+                    <li><strong>app.js</strong>：全局逻辑，定义 <code>globalData</code>（全局数据）和生命周期。</li>
+                    <li><strong>pages/</strong>：存放所有页面，每个页面是一个独立文件夹。</li>
+                    <li><strong>project.config.json</strong>：项目配置文件（由微信开发者工具自动管理）。</li>
+                </ul>
+            </div>
+
+            <ol class="step-list">
+                <li>
+                    <strong>在 VSCode 中创建 miniprogram 文件夹</strong><br>
+                    在项目根目录 <code>sleep-care</code> 下，新建文件夹 <code>miniprogram</code>。
+                </li>
+                <li>
+                    <strong>打开微信开发者工具</strong><br>
+                    打开微信开发者工具，使用微信扫码登录。
+                </li>
+                <li>
+                    <strong>新建小程序项目</strong><br>
+                    <ul style="padding-left: 20px;">
+                        <li>点击“+”号或“新建项目”</li>
+                        <li>项目名称：<code>智能睡眠</code> 或 <code>sleep-care</code></li>
+                        <li>目录：选择刚才创建的 <code>sleep-care/miniprogram</code> 文件夹</li>
+                        <li>AppID：使用测试号（点击“注册测试号”或使用你自己的AppID）</li>
+                        <li>开发模式：选“小程序”</li>
+                        <li>后端服务：选“不使用云服务”</li>
+                        <li>模板：选择“JavaScript 基础模板”</li>
+                        <li>点击“确定”</li>
+                    </ul>
+                </li>
+                <li>
+                    <strong>清理默认页面</strong><br>
+                    微信开发者工具会自动生成一些示例页面（如 <code>pages/index/index</code>），我们保留结构但替换内容。
+                </li>
+                <li>
+                    <strong>配置 app.json</strong><br>
+                    修改 <code>app.json</code>，设置页面路径为我们要用的页面：
+                    <div class="code-block" style="font-size:12px;">
+{
+  "pages": [
+    "pages/login/login",
+    "pages/devices/devices"
+  ],
+  "window": {
+    "navigationBarTitleText": "智能睡眠管理",
+    "navigationBarBackgroundColor": "#ffffff"
+  }
+}
+                    </div>
+                    <div class="code-walkthrough" style="margin-top:8px;">
+                        <strong>🔍 配置深度解析</strong>
+                        <ul>
+                            <li><strong><code>pages</code> 数组</strong>：<strong>第一项是启动页</strong>——用户打开小程序先看到登录页。后续添加新页面只需在数组中追加路径。</li>
+                            <li><strong><code>navigationBarTitleText</code></strong>：全局导航栏标题，可被页面级 <code>.json</code> 覆盖。</li>
+                            <li><strong><code>navigationBarBackgroundColor</code></strong>：导航栏背景色，白色符合医疗健康类应用风格。</li>
+                        </ul>
+                        <p><span class="badge-blue">💡 重点理解</span> <code>pages</code> 数组的第一个页面是小程序冷启动时的入口。这里 <code>login</code> 排第一，所以用户必须先登录——符合业务需求。</p>
+                    </div>
+                    <span class="step-note"><span class="label">📌 说明</span> 修改 <code>app.json</code> 并保存后，微信开发者工具会自动在 <code>pages</code> 目录下创建对应的页面文件夹和四个基础文件。</span>
+                </li>
+                <li>
+                    <strong>观察自动生成的文件结构</strong><br>
+                    配置完 <code>app.json</code> 并保存后，微信开发者工具会自动在 <code>pages</code> 目录下创建 <code>login</code> 和 <code>devices</code> 文件夹，并在每个文件夹中生成四个基础文件：<br>
+                    <div class="file-structure">
+<span class="folder">pages/</span><br>
+├── <span class="folder">login/</span><br>
+│   ├── <span class="file">login.wxml</span>  ← 页面结构（HTML）<br>
+│   ├── <span class="file">login.wxss</span>  ← 页面样式（CSS）<br>
+│   ├── <span class="file">login.js</span>    ← 页面逻辑（JavaScript）<br>
+│   └── <span class="file">login.json</span>  ← 页面配置<br>
+└── <span class="folder">devices/</span><br>
+    ├── <span class="file">devices.wxml</span><br>
+    ├── <span class="file">devices.wxss</span><br>
+    ├── <span class="file">devices.js</span><br>
+    └── <span class="file">devices.json</span>
+                    </div>
+                    <div class="code-walkthrough" style="margin-top:8px;">
+                        <strong>🔍 四个文件的作用详解</strong>
+                        <ul>
+                            <li><strong>.wxml</strong>：页面结构，使用小程序组件（<code>&lt;view&gt;</code>、<code>&lt;text&gt;</code>、<code>&lt;button&gt;</code>、<code>&lt;input&gt;</code>）。</li>
+                            <li><strong>.wxss</strong>：页面样式，支持 CSS 大部分语法，新增 <code>rpx</code> 单位自适应屏幕。</li>
+                            <li><strong>.js</strong>：页面逻辑，使用 <code>Page({ data: {...}, 方法名() {...} })</code> 定义数据和事件处理。</li>
+                            <li><strong>.json</strong>：页面配置，可覆盖 <code>app.json</code> 中的全局配置（如导航栏标题）。</li>
+                        </ul>
+                        <p><span class="badge-blue">💡 设计理念</span> 四文件分离关注点：WXML 搭骨架，WXSS 穿衣服，JS 装大脑，JSON 给指令。</p>
+                    </div>
+                </li>
+            </ol>
+
+            <div class="gui-step">
+                <strong>✅ 验收：</strong> 微信开发者工具中能正常预览小程序，没有报错；<code>pages/login/</code> 和 <code>pages/devices/</code> 目录下各有四个文件（.wxml / .wxss / .js / .json）。
+            </div>
+        </div>
+    </div>
+
+    <!-- B-任务2 -->
+    <div class="task-card">
+        <div class="task-header">
+            <span>✅ B-任务2：用Claude生成登录页面</span>
+            <span class="time-tag">⏱️ 20分钟</span>
+        </div>
+        <div class="task-body">
+
+            <div class="knowledge-box">
+                <strong>📚 前置知识：小程序如何调用后端API？</strong><br>
+                小程序使用 <code>wx.request()</code> 发 HTTP 请求：<br>
+                <ul>
+                    <li><strong>url</strong>：接口地址（注意开发环境需用 <code>http://localhost:3000</code>，需勾选“不校验合法域名”）</li>
+                    <li><strong>method</strong>：请求方法（GET / POST / PUT / DELETE）</li>
+                    <li><strong>data</strong>：请求体数据（对象形式）</li>
+                    <li><strong>header</strong>：请求头，可以设置 <code>Content-Type</code> 和 <code>Authorization</code></li>
+                    <li><strong>success</strong>：请求成功的回调</li>
+                    <li><strong>fail</strong>：请求失败的回调</li>
+                </ul>
+                <strong>Token 存储</strong>：用 <code>wx.setStorageSync('token', token)</code> 存到本地，用 <code>wx.getStorageSync('token')</code> 取出。这样小程序关闭再打开，用户依然是登录状态。
+            </div>
+
+            <ol class="step-list">
+                <li>
+                    <strong>在Claude中生成登录页面的WXML结构</strong><br>
+                    在 Claude 中输入提示词：
+                    <div class="prompt-box">
+                        <strong>📝 提示词（WXML）：</strong><br>
+                        请为我的微信小程序生成登录页面（pages/login/login.wxml），要求：<br>
+                        1. 页面居中布局，背景色柔和<br>
+                        2. 顶部显示 "智能睡眠管理" 标题<br>
+                        3. 两个输入框：手机号（placeholder="请输入手机号"）、密码（placeholder="请输入密码"）<br>
+                        4. 一个登录按钮，文字为 "登录"<br>
+                        5. 按钮下方显示 "固定密码：123456" 的提示文字<br>
+                        6. 使用微信小程序的 input 和 button 组件<br>
+                        7. 点击登录按钮时，调用 login.js 中的 handleLogin 方法
+                    </div>
+                    <p>将 AI 生成的 WXML 代码复制到 <code>login.wxml</code> 文件中。</p>
+                </li>
+                <li>
+                    <strong>生成登录页面的逻辑（JS）</strong><br>
+                    在 Claude 中继续输入：
+                    <div class="prompt-box">
+                        <strong>📝 提示词（JS）：</strong><br>
+                        请为微信小程序登录页面生成 login.js 逻辑，要求：<br>
+                        1. 在 Page({}) 中定义 data：phone: '', password: ''<br>
+                        2. 定义 inputPhone 和 inputPassword 方法，用于双向绑定输入框的值<br>
+                        3. 定义 handleLogin 方法：<br>
+                        &nbsp;&nbsp;&nbsp;a. 校验 phone 和 password 不能为空<br>
+                        &nbsp;&nbsp;&nbsp;b. 调用 wx.request 发送 POST 请求到 http://localhost:3000/api/auth/login<br>
+                        &nbsp;&nbsp;&nbsp;c. 请求头 Content-Type: application/json<br>
+                        &nbsp;&nbsp;&nbsp;d. 请求体为 { phone, password }<br>
+                        &nbsp;&nbsp;&nbsp;e. 成功回调：如果 res.data.code === 0，用 wx.setStorageSync 保存 token，用 wx.showToast 提示"登录成功"，然后 wx.navigateTo 跳转到 pages/devices/devices<br>
+                        &nbsp;&nbsp;&nbsp;f. 失败回调：wx.showToast 提示错误信息<br>
+                        4. 在 onLoad 生命周期中检查本地是否有 token，如果有，直接跳转到设备页（免登录）
+                    </div>
+                    <p>将 AI 生成的 JS 代码复制到 <code>login.js</code> 文件中。</p>
+                </li>
+                <li>
+                    <strong>生成登录页面的样式（WXSS）</strong><br>
+                    在 Claude 中输入：
+                    <div class="prompt-box">
+                        <strong>📝 提示词（WXSS）：</strong><br>
+                        请为小程序登录页面生成登录页样式（pages/login/login.wxss），要求：<br>
+                        1. 容器充满全屏，使用 flex 居中<br>
+                        2. 标题字体大一些，颜色深蓝<br>
+                        3. 输入框有圆角边框，有合适的间距<br>
+                        4. 登录按钮背景色为蓝色，白色文字，圆角<br>
+                        5. 提示文字颜色为灰色，字号小一些
+                    </div>
+                </li>
+                <li>
+                    <strong>（可选）配置 login.json</strong><br>
+                    登录页可以单独设置导航栏标题，在 <code>login.json</code> 中写入：
+                    <div class="code-block" style="font-size:12px;">
+{
+  "navigationBarTitleText": "登录"
+}
+                    </div>
+                </li>
+                <li>
+                    <strong>修改 app.js 存储全局 Token</strong><br>
+                    为了后续其他页面也能方便获取 Token，在 <code>app.js</code> 中定义：
+                    <div class="code-block" style="font-size:12px;">
+App({
+  globalData: {
+    userInfo: null,
+    token: null
+  },
+  setToken(token) {
+    this.globalData.token = token;
+    wx.setStorageSync('token', token);
+  },
+  getToken() {
+    return this.globalData.token || wx.getStorageSync('token') || null;
+  }
+})
+                    </div>
+                    <span class="step-note"><span class="label">📌 说明</span> 这样任何页面都能通过 <code>getApp().setToken()</code> 和 <code>getApp().getToken()</code> 操作 Token。</span>
+                </li>
+                <li>
+                    <strong>配置开发者工具不校验合法域名</strong><br>
+                    在微信开发者工具中，点击右上角“详情” → “本地设置” → 勾选 <strong>“不校验合法域名、web-view（业务域名）、TLS 版本以及 HTTPS 证书”</strong>。<br>
+                    <span class="step-note"><span class="label">⚠️ 重要</span> 因为我们的后端跑在 <code>localhost:3000</code>（HTTP），如果不勾选这个，小程序会报域名不合法。</span>
+                </li>
+                <li>
+                    <strong>测试登录流程</strong><br>
+                    确保后端服务正在运行（<code>npm run dev</code>）。<br>
+                    在小程序开发工具中，输入手机号 <code>13800138000</code>，密码 <code>123456</code>，点击登录。<br>
+                    <span class="step-note"><span class="label">✅ 预期</span> 登录成功，跳转到 devices 页面（目前 devices 页面是空的，下一步会完善）。</span>
+                </li>
+            </ol>
+
+            <div class="code-walkthrough">
+                <strong>🔍 代码走读：登录页逻辑（login.js）</strong>
+                <div class="code-block" style="font-size:12px;">
+Page({
+  data: { phone: '', password: '' },
+
+  inputPhone(e) {
+    this.setData({ phone: e.detail.value });
+  },
+
+  inputPassword(e) {
+    this.setData({ password: e.detail.value });
+  },
+
+  handleLogin() {
+    const { phone, password } = this.data;
+    if (!phone || !password) {
+      wx.showToast({ title: '请输入手机号和密码', icon: 'none' });
+      return;
+    }
+
+    wx.request({
+      url: 'http://localhost:3000/api/auth/login',
+      method: 'POST',
+      data: { phone, password },
+      header: { 'Content-Type': 'application/json' },
+      success: (res) => {
+        if (res.data.code === 0) {
+          const token = res.data.data.token;
+          getApp().setToken(token);
+          wx.showToast({ title: '登录成功', icon: 'success' });
+          wx.navigateTo({ url: '/pages/devices/devices' });
+        } else {
+          wx.showToast({ title: res.data.message, icon: 'none' });
+        }
+      },
+      fail: () => {
+        wx.showToast({ title: '网络请求失败', icon: 'none' });
+      }
+    });
+  },
+
+  onLoad() {
+    if (getApp().getToken()) {
+      wx.navigateTo({ url: '/pages/devices/devices' });
+    }
+  }
+});
+                </div>
+                <ul>
+                    <li><strong><code>inputPhone</code> / <code>inputPassword</code></strong>：<code>e.detail.value</code> 是输入框的当前值，通过 <code>this.setData()</code> 更新页面数据。</li>
+                    <li><strong><code>wx.request</code></strong>：小程序的网络请求 API。<code>url</code> 指向我们的后端，<code>data</code> 是请求体（手机号+密码）。</li>
+                    <li><strong><code>getApp().setToken()</code></strong>：登录成功后存储 Token 到全局变量和本地缓存。</li>
+                    <li><strong><code>wx.navigateTo</code></strong>：跳转到设备管理页（注意路径以 <code>/</code> 开头表示绝对路径）。</li>
+                    <li><strong><code>onLoad</code></strong>：页面加载时检查本地缓存是否有 token，有则直接跳转，实现“免登录”。</li>
+                </ul>
+                <p><span class="badge-blue">💡 重点理解</span> <code>wx.setStorageSync</code> 是同步存储，存到用户手机本地，即使小程序关闭也不会丢失。</p>
+            </div>
+
+            <div class="gui-step">
+                <strong>✅ 操作速记：</strong> 创建login页面 → Claude生成WXML/JS/WXSS → 复制代码 → 配置app.js → 勾选不校验域名 → 测试登录。
+            </div>
+        </div>
+    </div>
+
+    <!-- B-任务3 -->
+    <div class="task-card">
+        <div class="task-header">
+            <span>✅ B-任务3：用Claude创建设备列表页面（对接SQLite API）</span>
+            <span class="time-tag">⏱️ 15分钟</span>
+        </div>
+        <div class="task-body">
+
+            <p><strong>目的</strong>：创建设备管理页面，展示设备列表，并实现添加/删除虚拟设备的功能（调用刚完成的 SQLite 版 API）。</p>
+
+            <ol class="step-list">
+                <li>
+                    <strong>用Claude生成设备列表页面的WXML</strong><br>
+                    在 Claude 中输入：
+                    <div class="prompt-box">
+                        <strong>📝 提示词（WXML）：</strong><br>
+                        请为微信小程序设备管理页面生成 devices.wxml，要求：<br>
+                        1. 顶部显示 "我的设备" 标题<br>
+                        2. 使用 <code>&lt;view wx:for="{{devices}}" wx:key="id"&gt;</code> 循环渲染设备列表<br>
+                        3. 每个设备卡片显示：设备昵称（nickname）、序列号（serial_no）、在线状态（online_status：1显示"在线"绿色，0显示"离线"灰色）<br>
+                        4. 每个卡片添加一个删除按钮（绑定事件 handleDelete，传入 device id）<br>
+                        5. 页面底部有一个 "添加虚拟设备" 按钮，绑定事件 handleAddDevice
+                    </div>
+                </li>
+                <li>
+                    <strong>生成设备列表页面的JS逻辑（对接SQLite API）</strong><br>
+                    在 Claude 中输入：
+                    <div class="prompt-box">
+                        <strong>📝 提示词（JS）：</strong><br>
+                        请为微信小程序设备管理页面生成 devices.js，要求对接 SQLite 版设备API（使用主键 id 作为标识）：<br>
+                        1. 在 onShow 中调用 loadDevices 方法（每次显示页面都刷新列表）<br>
+                        2. loadDevices 方法：<br>
+                        &nbsp;&nbsp;&nbsp;a. 从 getApp().getToken() 获取 token<br>
+                        &nbsp;&nbsp;&nbsp;b. 如果无 token，跳转回登录页<br>
+                        &nbsp;&nbsp;&nbsp;c. 使用 wx.request GET http://localhost:3000/api/device/list，请求头 Authorization: Bearer token<br>
+                        &nbsp;&nbsp;&nbsp;d. 将返回的 data（设备数组）设置到 this.data.devices<br>
+                        3. handleAddDevice 方法：<br>
+                        &nbsp;&nbsp;&nbsp;a. 调用 wx.request POST http://localhost:3000/api/device/add，请求体 { is_virtual: true }<br>
+                        &nbsp;&nbsp;&nbsp;b. 添加成功后，重新调用 loadDevices 刷新列表<br>
+                        4. handleDelete 方法：接收设备 id<br>
+                        &nbsp;&nbsp;&nbsp;a. 调用 wx.request DELETE http://localhost:3000/api/devices/${id}<br>
+                        &nbsp;&nbsp;&nbsp;b. 删除成功后，重新调用 loadDevices
+                    </div>
+                </li>
+                <li>
+                    <strong>生成设备列表页面的样式（WXSS）</strong><br>
+                    可参考第2节的样式，或让 Claude 生成简洁的设备卡片样式。
+                </li>
+                <li>
+                    <strong>（可选）配置 devices.json</strong><br>
+                    设备页可以设置标题为“我的设备”：
+                    <div class="code-block" style="font-size:12px;">
+{
+  "navigationBarTitleText": "我的设备"
+}
+                    </div>
+                </li>
+                <li>
+                    <strong>测试完整流程</strong><br>
+                    <span class="step-note"><span class="label">✅ 完整流程</span> 打开小程序 → 登录 → 进入设备页 → 点击“添加虚拟设备” → 列表新增设备 → 点击删除 → 设备移除 → 重启服务器后数据依然存在（验证SQLite持久化 + saveDb()）。</span>
+                </li>
+            </ol>
+
+            <div class="code-walkthrough">
+                <strong>🔍 代码走读：设备列表页（devices.js，对接SQLite API）</strong>
+                <div class="code-block" style="font-size:12px;">
+const app = getApp();
+const BASE_URL = 'http://localhost:3000';
+
+Page({
+  data: { devices: [] },
+
+  onShow() {
+    this.loadDevices();
+  },
+
+  loadDevices() {
+    const token = app.getToken();
+    if (!token) {
+      wx.redirectTo({ url: '/pages/login/login' });
+      return;
+    }
+
+    wx.request({
+      url: `${BASE_URL}/api/device/list`,
+      method: 'GET',
+      header: { 'Authorization': 'Bearer ' + token },
+      success: (res) => {
+        if (res.data.code === 0) {
+          this.setData({ devices: res.data.data || [] });
+        } else if (res.data.code === 401 || res.data.code === 403) {
+          wx.redirectTo({ url: '/pages/login/login' });
+        } else {
+          wx.showToast({ title: res.data.message, icon: 'none' });
+        }
+      },
+      fail: () => {
+        wx.showToast({ title: '网络请求失败', icon: 'none' });
+      }
+    });
+  },
+
+  handleAddDevice() {
+    const token = app.getToken();
+    wx.request({
+      url: `${BASE_URL}/api/device/add`,
+      method: 'POST',
+      data: { is_virtual: true },
+      header: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      },
+      success: (res) => {
+        if (res.data.code === 0) {
+          wx.showToast({ title: '添加成功', icon: 'success' });
+          this.loadDevices();
+        } else {
+          wx.showToast({ title: res.data.message, icon: 'none' });
+        }
+      }
+    });
+  },
+
+  handleDelete(e) {
+    const deviceId = e.currentTarget.dataset.id;
+    wx.showModal({
+      title: '确认删除',
+      content: '确定要解绑该设备吗？',
+      success: (res) => {
+        if (res.confirm) {
+          const token = app.getToken();
+          wx.request({
+            url: `${BASE_URL}/api/devices/${deviceId}`,
+            method: 'DELETE',
+            header: { 'Authorization': 'Bearer ' + token },
+            success: (res) => {
+              if (res.data.code === 0) {
+                wx.showToast({ title: '删除成功', icon: 'success' });
+                this.loadDevices();
+              } else {
+                wx.showToast({ title: res.data.message, icon: 'none' });
+              }
+            }
+          });
+        }
+      }
+    });
+  }
+});
+                </div>
+                <ul>
+                    <li><strong><code>BASE_URL</code></strong>：统一管理 API 基础地址，后续切换环境只需修改此处。</li>
+                    <li><strong><code>onShow()</code></strong>：页面每次显示（包括从其他页面返回）都会触发，保证列表总是最新的。</li>
+                    <li><strong><code>wx.redirectTo</code></strong>：Token 无效时用 <code>redirectTo</code> 替换当前页面，防止用户按返回键回到失效状态。</li>
+                    <li><strong><code>e.currentTarget.dataset.id</code></strong>：在 WXML 中通过 <code>data-id="{{item.id}}"</code> 传递设备主键。</li>
+                    <li><strong><code>wx.showModal</code></strong>：删除前弹出确认框，防止误删。</li>
+                </ul>
+                <p><span class="badge-blue">💡 重点理解</span> 小程序中 <strong>所有需要认证的请求都必须带上 Token</strong>。我们通过 <code>getApp().getToken()</code> 统一获取，避免每个页面都去读缓存。</p>
+            </div>
+
+            <div class="gui-step">
+                <strong>✅ 操作速记：</strong> 创建设备页 → Claude生成WXML/JS → 复制代码 → 测试添加/删除虚拟设备 → 验证数据持久化（重启服务器后数据仍在）。
+            </div>
+        </div>
+    </div>
+
+    <!-- B-任务4：美化界面 -->
+    <div class="task-card">
+        <div class="task-header">
+            <span>✅ B-任务4：用Claude美化设备列表界面（可选）</span>
+            <span class="time-tag">⏱️ 10分钟</span>
+        </div>
+        <div class="task-body">
+
+            <p><strong>目的</strong>：利用 AI 的视觉理解能力，通过截图反馈迭代优化 UI，让设备列表更具美感。</p>
+
+            <ol class="step-list">
+                <li>
+                    <strong>在微信开发者工具中截取设备列表界面</strong><br>
+                    确保小程序已登录并进入设备列表页（至少有一个设备）。<br>
+                    <span class="step-note"><span class="label">📌 操作</span> 在微信开发者工具的模拟器区域，保存截图到本地。</span>
+                </li>
+                <li>
+                    <strong>将截图发送给 Claude</strong><br>
+                    使用 Alt+V 将刚才的截图发给 Claude。
+                </li>
+                <li>
+                    <strong>输入美化提示词</strong><br>
+                    在图片发送后，输入提示词：
+                    <div class="prompt-box">
+                        <strong>📝 提示词（美化UI）：</strong><br>
+                        这是我的微信小程序设备列表页面截图。请帮我优化界面样式，要求：<br>
+                        1. 每个设备卡片使用圆角、轻微阴影，背景白色，间距适当<br>
+                        2. 设备昵称使用较大、加粗字体，颜色深色<br>
+                        3. 在线状态：在线用绿色圆点，离线用灰色圆点<br>
+                        4. 删除按钮使用红色文字或垃圾桶图标，放置在卡片右上角<br>
+                        5. “添加虚拟设备”按钮使用品牌蓝色，圆角，有按压反馈<br>
+                        6. 整体背景为浅灰（#f5f7fa），保持干净、医疗健康风格
+                    </div>
+                </li>
+                <li>
+                    <strong>应用 AI 生成的代码</strong><br>
+                    将 Claude 返回的 WXML 和 WXSS 代码分别复制到 <code>pages/devices/devices.wxml</code> 和 <code>pages/devices/devices.wxss</code> 中，保存后预览效果。
+                </li>
+                <li>
+                    <strong>迭代优化</strong><br>
+                    如果不满意，可以继续给 Claude 反馈，通过 2-3 轮迭代获得满意的界面。
+                </li>
+            </ol>
+
+            <div class="code-walkthrough">
+                <strong>🎨 美化思路解析</strong>
+                <ul>
+                    <li><strong>卡片设计</strong>：使用 <code>box-shadow</code> 和 <code>border-radius</code> 让卡片立体。</li>
+                    <li><strong>在线状态</strong>：用圆点颜色直观表示设备在线/离线状态。</li>
+                    <li><strong>整体色调</strong>：医疗健康类应用常用蓝色系 + 灰色背景，营造专业、平静的氛围。</li>
+                </ul>
+                <p><span class="badge-blue">💡 教学价值</span> 这一步骤让学生体验“截图 → AI 理解 → 生成代码”的闭环，理解 AI 在 UI 迭代中的实际应用。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 五、完整代码参考（后端核心，基于 sql.js） ========= -->
+    <h2>📄 五、完整代码参考（app.js 新增部分，SQLite版，基于 sql.js）</h2>
+
+    <p>以下是本节 <code>backend/app.js</code> 新增的核心代码（认证中间件已存在 + 设备管理SQLite接口），供对照检查：</p>
+
+    <div class="code-block" style="font-size:12px;">
+// ========== 认证中间件（已在第2节实现） ==========
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    if (!token) {
+        return res.status(401).json({ code: 401, message: '未提供认证令牌' });
+    }
+    jwt.verify(token, JWT_SECRET, (err, decoded) => {
+        if (err) {
+            return res.status(403).json({ code: 403, message: '令牌无效或已过期' });
+        }
+        req.user = decoded;
+        next();
+    });
+}
+
+// ========== 设备管理（SQLite版，基于 sql.js，对齐 devices 表） ==========
+
+// 获取设备列表
+app.get('/api/device/list', authenticateToken, async (req, res) => {
+    const userId = req.user.id;
+    const db = await getDb();
+    const devices = dbGetAll(
+        db,
+        'SELECT * FROM devices WHERE user_id = ? ORDER BY created_at DESC',
+        [userId]
+    );
+    res.json({ code: 0, message: 'success', data: devices });
+});
+
+// 添加设备
+app.post('/api/device/add', authenticateToken, async (req, res) => {
+    const { device_serial, is_virtual } = req.body;
+    const userId = req.user.id;
+    const db = await getDb();
+
+    let serialNo;
+    if (is_virtual === true) {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        for (let attempt = 0; attempt < 3; attempt++) {
+            let randomStr = '';
+            for (let i = 0; i < 16; i++) {
+                randomStr += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            serialNo = 'VIR' + randomStr;
+            const existing = dbGetOne(db, 'SELECT 1 FROM devices WHERE serial_no = ?', [serialNo]);
+            if (!existing) break;
+        }
+    } else if (device_serial) {
+        if (!/^[A-Za-z0-9]{16}$/.test(device_serial)) {
+            return res.json({ code: 1001, message: '序列号格式错误' });
+        }
+        serialNo = device_serial;
+    } else {
+        return res.json({ code: 1001, message: '请提供设备序列号或标记为虚拟设备' });
+    }
+
+    const now = new Date().toISOString();
+    try {
+        db.run(
+            `INSERT INTO devices (user_id, serial_no, nickname, is_virtual, online_status, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [userId, serialNo, '我的设备', is_virtual ? 1 : 0, 1, now, now]
+        );
+        // ⚠️ 关键：sql.js 必须显式调用 saveDb() 持久化
+        saveDb();
+        const newDevice = dbGetOne(db, 'SELECT * FROM devices WHERE serial_no = ?', [serialNo]);
+        res.json({ code: 0, message: '添加成功', data: newDevice });
+    } catch (err) {
+        if (err.message && err.message.includes('UNIQUE constraint failed')) {
+            return res.json({ code: 1001, message: '该序列号已被绑定' });
+        }
+        res.json({ code: 1001, message: '添加失败' });
+    }
+});
+
+// 修改设备昵称（使用主键 id）
+app.put('/api/devices/:id', authenticateToken, async (req, res) => {
+    const deviceId = parseInt(req.params.id, 10);
+    const { nickname } = req.body;
+    const userId = req.user.id;
+    const db = await getDb();
+
+    if (!nickname || !nickname.trim()) {
+        return res.json({ code: 1001, message: '设备昵称不能为空' });
+    }
+
+    const device = dbGetOne(db, 'SELECT * FROM devices WHERE id = ?', [deviceId]);
+    if (!device) return res.json({ code: 1001, message: '设备不存在' });
+    if (device.user_id !== userId) return res.json({ code: 1001, message: '无权操作该设备' });
+
+    const now = new Date().toISOString();
+    db.run('UPDATE devices SET nickname = ?, updated_at = ? WHERE id = ?',
+        [nickname.trim(), now, deviceId]);
+    saveDb();  // 持久化更新
+
+    const updated = dbGetOne(db, 'SELECT * FROM devices WHERE id = ?', [deviceId]);
+    res.json({ code: 0, message: '修改成功', data: updated });
+});
+
+// 删除设备（使用主键 id）
+app.delete('/api/devices/:id', authenticateToken, async (req, res) => {
+    const deviceId = parseInt(req.params.id, 10);
+    const userId = req.user.id;
+    const db = await getDb();
+
+    const device = dbGetOne(db, 'SELECT * FROM devices WHERE id = ?', [deviceId]);
+    if (!device) return res.json({ code: 1001, message: '设备不存在' });
+    if (device.user_id !== userId) return res.json({ code: 1001, message: '无权操作该设备' });
+
+    db.run('DELETE FROM devices WHERE id = ?', [deviceId]);
+    saveDb();  // 持久化删除
+    res.json({ code: 0, message: '删除成功', data: null });
+});
+    </div>
+
+    <!-- ========== 六、Postman测试设备接口详细指南 ========= -->
+    <h2>📮 六、Postman测试设备管理接口 - 完整操作指南</h2>
+
+    <h3>6.1 第一步：用户登录，获取 Token</h3>
+
+    <ol class="step-list">
+        <li>Postman 新建请求：<code>POST http://localhost:3000/api/auth/login</code></li>
+        <li>Body → raw → JSON：<code>{"phone":"13800138000","password":"123456"}</code></li>
+        <li>点击 Send，从响应中复制 <code>token</code> 值（一长串字符串）。</li>
+    </ol>
+
+    <h3>6.2 第二步：设置 Authorization 请求头</h3>
+
+    <ol class="step-list">
+        <li>新建请求（如 GET 设备列表），切换到 <strong>Headers</strong> 选项卡。</li>
+        <li>添加一行：Key = <code>Authorization</code>，Value = <code>Bearer 你复制的token</code></li>
+        <li><span class="badge-warn">⚠️ 注意</span> Bearer 和 token 之间有一个空格，不要加引号。</li>
+    </ol>
+
+    <div class="knowledge-box">
+        <strong>📚 解析：Authorization: Bearer &lt;token&gt;</strong><br>
+        <ul>
+            <li><strong>Authorization</strong>：HTTP 标准请求头字段，专门用来传递认证凭证。</li>
+            <li><strong>Bearer</strong>：认证方案，表示“持有者令牌”——谁持有这个令牌，谁就拥有对应权限。</li>
+            <li><strong>&lt;token&gt;</strong>：JWT 令牌本身，包含用户身份信息。</li>
+        </ul>
+    </div>
+
+    <h3>6.3 第三步：测试各接口</h3>
+
+    <table>
+        <thead><tr><th>操作</th><th>方法</th><th>URL</th><th>Body JSON</th></tr></thead>
+        <tbody>
+            <tr><td>获取设备列表</td><td>GET</td><td><code>/api/device/list</code></td><td>无</td></tr>
+            <tr><td>添加虚拟设备</td><td>POST</td><td><code>/api/device/add</code></td><td><code>{"is_virtual": true}</code></td></tr>
+            <tr><td>修改设备昵称</td><td>PUT</td><td><code>/api/devices/:id</code></td><td><code>{"nickname":"新昵称"}</code></td></tr>
+            <tr><td>删除设备</td><td>DELETE</td><td><code>/api/devices/:id</code></td><td>无（参数在路径中）</td></tr>
+        </tbody>
+    </table>
+
+    <div class="gui-step">
+        <strong>✅ 测试流程：</strong> 登录获取Token → 设置Authorization头 → GET列表（空）→ POST添加虚拟设备 → GET列表（有设备，含 id, serial_no, nickname）→ PUT修改昵称 → GET列表验证 → DELETE删除 → GET列表验证移除。
+        <br><br>
+        <strong>⚠️ 持久化验证</strong>：添加或修改设备后，重启服务器（Ctrl+C → npm run dev），再次 GET 列表，确认数据仍然存在。如果数据丢失，说明 <code>saveDb()</code> 未被正确调用。
+    </div>
+
+    <!-- ========== 七、教师巡回指导要点 ========= -->
+    <h2>👨‍🏫 七、教师巡回指导要点</h2>
+
+    <div class="checklist">
+        <ul>
+            <li>✅ <strong>后端</strong>：检查 <code>authenticateToken</code> 中间件是否正常工作（无 Token 请求返回 401）</li>
+            <li>✅ <strong>后端</strong>：检查设备接口是否使用 SQLite 数据库（而非内存数组），重启服务器后数据不丢失</li>
+            <li>✅ <strong>后端</strong>：检查设备是否按用户隔离（用户A添加的设备，用户B的列表看不到）</li>
+            <li>✅ <strong>后端</strong>：检查设备对象字段是否包含 <code>id</code>、<code>serial_no</code>、<code>nickname</code>、<code>online_status</code> 等，确保与 ER 图一致</li>
+            <li>✅ <strong>后端【关键】</strong>：检查每个 INSERT/UPDATE/DELETE 操作后是否调用了 <code>saveDb()</code>。如果遗漏，数据只在内存中，重启即丢失</li>
+            <li>✅ <strong>后端【关键】</strong>：检查 <code>getDb()</code> 是否使用了 <code>await</code>（sql.js 的 getDb 是异步的）</li>
+            <li>✅ <strong>前端</strong>：检查小程序项目结构是否完整（app.json 配置了 login 和 devices 页面）</li>
+            <li>✅ <strong>前端</strong>：检查是否勾选了“不校验合法域名”（否则小程序无法请求 localhost）</li>
+            <li>✅ <strong>核心</strong>：随机抽查学生，让他们解释认证中间件的工作原理，或解释 SQLite 设备接口的数据库操作，<strong>重点说明 <code>saveDb()</code> 的作用</strong></li>
+            <li>✅ <strong>联调</strong>：检查学生是否成功从小程序登录，并在设备页看到添加的设备列表</li>
+            <li>✅ <strong>持久化验证</strong>：让学生重启服务器，验证设备数据仍然存在（证明 <code>saveDb()</code> 生效）</li>
+        </ul>
+    </div>
+
+    <!-- ========== 八、常见问题及解决方案 ========= -->
+    <h2>❗ 八、常见问题及解决方案</h2>
+
+    <div class="trouble-box">
+        <h4>❌ 问题1：小程序请求接口报错 "request:fail url not in domain list"</h4>
+        <p><strong>原因</strong>：小程序默认要求请求地址为 HTTPS，且需配置合法域名。</p>
+        <p><strong>解决方案</strong>：在微信开发者工具中，点击“详情” → “本地设置” → 勾选“不校验合法域名”。</p>
+    </div>
+
+    <div class="trouble-box">
+        <h4>❌ 问题2：Postman 请求设备接口返回 401 "未提供认证令牌"</h4>
+        <p><strong>原因</strong>：没有在请求头中添加 Authorization。</p>
+        <p><strong>解决方案</strong>：先调用登录接口获取 token，然后在 Postman 的 Headers 中添加 <code>Authorization: Bearer &lt;token&gt;</code>。</p>
+    </div>
+
+    <div class="trouble-box">
+        <h4>❌ 问题3：设备列表接口返回空数组</h4>
+        <p><strong>原因</strong>：数据库中没有设备记录，或当前用户没添加过设备。</p>
+        <p><strong>解决方案</strong>：先调用添加设备接口（POST /add），然后重新查看列表。</p>
+    </div>
+
+    <div class="trouble-box">
+        <h4>❌ 问题4：添加设备时提示 "该序列号已被绑定"</h4>
+        <p><strong>原因</strong>：手动输入的序列号在数据库中已存在，或虚拟设备生成时碰撞（概率极低）。</p>
+        <p><strong>解决方案</strong>：如果是手动输入，换一个序列号；如果是虚拟设备，重试添加（代码中已做3次重试）。</p>
+    </div>
+
+    <div class="trouble-box">
+        <h4>❌ 问题5：小程序登录后没有跳转，也没有报错</h4>
+        <p><strong>原因</strong>：可能是 <code>wx.navigateTo</code> 的路径写错了，或 <code>pages/devices/devices</code> 页面不存在。</p>
+        <p><strong>解决方案</strong>：检查 <code>app.json</code> 中的 <code>pages</code> 配置，确保路径正确。</p>
+    </div>
+
+    <div class="trouble-box">
+        <h4>❌ 问题6：重启服务器后设备数据丢失</h4>
+        <p><strong>原因</strong>：没有调用 <code>saveDb()</code>，或 <code>saveDb()</code> 实现有误（sql.js 需要显式持久化）。</p>
+        <p><strong>解决方案</strong>：</p>
+        <ol>
+            <li>检查 <code>app.js</code> 中每个 INSERT/UPDATE/DELETE 操作后是否调用了 <code>saveDb()</code></li>
+            <li>检查 <code>db/connection.js</code> 中 <code>saveDb()</code> 是否正确使用 <code>db.export()</code> 和 <code>fs.writeFileSync()</code></li>
+            <li>如果代码已正确但数据仍丢失，在终端中查看 <code>saveDb()</code> 是否有报错（如权限问题）</li>
+        </ol>
+    </div>
+
+    <div class="trouble-box">
+        <h4>❌ 问题7：微信开发者工具没有自动创建 login/devices 文件夹</h4>
+        <p><strong>原因</strong>：修改 app.json 后没有保存，或 app.json 格式有误。</p>
+        <p><strong>解决方案</strong>：确保 <code>app.json</code> 文件已保存，检查 JSON 格式是否合法，点击“编译”按钮强制重新编译。</p>
+    </div>
+
+    <div class="trouble-box">
+        <h4>❌ 问题8：代码中使用了 <code>dbGetAll</code> 但未定义</h4>
+        <p><strong>原因</strong>：<code>app.js</code> 中未定义 <code>dbGetAll</code> 辅助函数。</p>
+        <p><strong>解决方案</strong>：在 <code>app.js</code> 中补充定义（与 <code>dbGetOne</code> 类似，但循环获取所有行）：</p>
+        <div class="code-block" style="font-size:12px; margin-top:4px;">
+function dbGetAll(db, sql, params = []) {
+    const stmt = db.prepare(sql);
+    stmt.bind(params);
+    const rows = [];
+    while (stmt.step()) {
+        rows.push(stmt.getAsObject());
+    }
+    stmt.free();
+    return rows;
+}
+        </div>
+    </div>
+
+    <!-- ========== 九、课堂验收标准 ========= -->
+    <h2>📌 九、课堂验收标准（下课前5分钟）</h2>
+
+    <div class="teacher-talk" style="background:#e8f0fe;">
+        <ul>
+            <li>✅ <strong>后端</strong>：认证中间件正常工作，无 Token 请求返回 401，有 Token 请求正常返回设备数据</li>
+            <li>✅ <strong>后端</strong>：设备 CRUD 接口全部使用 SQLite 数据库操作，重启服务器后数据不丢失</li>
+            <li>✅ <strong>后端【关键】</strong>：学生能解释 <code>saveDb()</code> 在 sql.js 中的重要作用，并能指出哪些操作后需要调用</li>
+            <li>✅ <strong>后端</strong>：设备按用户隔离（可通过登录不同用户验证）</li>
+            <li>✅ <strong>小程序</strong>：登录页能正常请求后端，登录成功后 Token 存入本地缓存</li>
+            <li>✅ <strong>小程序</strong>：设备列表页能展示当前用户的设备，添加/删除功能正常</li>
+            <li>✅ <strong>核心</strong>：学生能解释认证中间件的工作原理，能说明设备接口的数据库操作流程</li>
+            <li>✅ <strong>核心</strong>：学生能说明小程序页面四文件（.wxml / .wxss / .js / .json）各自的作用</li>
+            <li>✅ Git 提交：本次代码已通过 SCM 面板提交，提交消息如 <code>feat(backend): 设备管理API升级为SQLite版（sql.js）</code> 和 <code>feat(miniprogram): 实现登录页和设备管理</code></li>
+        </ul>
+        <p><strong>教师随机抽查3-5名学生，要求演示完整流程并解释关键代码，特别是 <code>saveDb()</code> 的作用。</strong></p>
+    </div>
+
+    <!-- ========== 十、结语与预习 ========= -->
+    <h2>🔚 十、结语与预习（教师口述，约2分钟）</h2>
+
+    <div class="teacher-talk">
+        今天我们完成了两件里程碑式的工作：<strong>后端设备管理API升级为SQLite持久化版（基于 sql.js）</strong> 和 <strong>小程序登录页+设备管理页</strong>。至此，我们的项目已经从“纯后端”走向了“前后端打通”，且所有数据都持久化在数据库中——<strong>即使重启服务器，用户和设备的注册数据都不会丢失</strong>。<br><br>
+        <strong>特别重要的是</strong>：我们深入理解了 <code>sql.js</code> 的显式持久化机制——每次写操作后必须调用 <code>saveDb()</code>，否则数据只存在于内存中。这是 sql.js 与 better-sqlite3 的核心区别，也是同学们在实践中容易犯错的地方。<br><br>
+        我们的设备管理接口直接操作 <code>devices</code> 表，与第1节设计的 ER 图完全对齐。这意味着未来接入真实硬件时，只需要修改数据采集层，API 和前端代码几乎无需改动——这就是“数据库驱动”架构的核心价值。<br><br>
+        你现在有了一个完整的小程序界面，用户能登录，能管理设备。下一节我们将专注于 <strong>睡眠报告的数据模拟和图表展示</strong>——这是你们产品最核心的价值所在。<br><br>
+        <strong>📚 预习内容</strong>：<br>
+        - 回顾 ECharts 图表库（小程序中有 echarts-for-weixin）<br>
+        - 了解睡眠分期数据（深睡、浅睡、REM、清醒）的展示方式<br>
+        <br>
+        下节课将更加精彩——我们会看到“数据可视化”的力量！
+    </div>
+
+    <!-- ========== 十一、附录 ========= -->
+    <h2>📦 十一、附录：教师课前准备清单</h2>
+
+    <ul>
+        <li>确认学生机均安装 Node.js 18+、Git、VSCode、微信开发者工具（已登录）</li>
+        <li>确认 Claude Code 扩展已安装，测试 <code>claude</code> 命令可用</li>
+        <li>准备 Postman 测试集合（含登录接口、设备接口的示例请求）</li>
+        <li>确保后端服务（第2节的 app.js）能正常启动，<code>db/schema.js</code> 包含 devices 表</li>
+        <li>准备“不校验合法域名”的设置截图，以备学生参考</li>
+        <li>准备 Token 在请求头中传递的示意图（白板或文档）</li>
+        <li>准备 SQLite 数据库可视化工具（如 SQLiteStudio），以便演示数据持久化</li>
+        <li>准备 Claude 截图美化功能的演示（展示如何上传图片和生成样式）</li>
+        <li><strong>提前验证</strong>：在测试环境中完整走一遍本节所有任务，确保接口和数据库操作无误，特别验证 <code>saveDb()</code> 是否生效</li>
+        <li><strong>准备一个对比演示</strong>：展示“调用 saveDb()”和“不调用 saveDb()”重启后的数据差异，加深学生印象</li>
+    </ul>
+
+    <hr>
+    <footer>
+        东莞职业技术学院 · 产业教师项目实训 | 基于Vibe Coding + 代码走读解析<br>
+        第3大节讲义 · V3.0 数据库驱动版（sql.js） | 虚拟设备管理API（SQLite持久化）+ 小程序登录页
+    </footer>
+</div>
+</body>
+</html>
