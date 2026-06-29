@@ -148,7 +148,7 @@ app.post('/api/auth/register', async (req, res) => {
     const db = await getDb();
 
     // ---- 检查手机号是否已注册 ----
-    const existUser = dbGetOne(db, 'SELECT user_id FROM users WHERE phone = ?', [phone]);
+    const existUser = dbGetOne(db, 'SELECT id FROM users WHERE phone = ?', [phone]);
     if (existUser) {
       return res.json({ code: 3001, message: '该手机号已注册', data: null });
     }
@@ -171,7 +171,7 @@ app.post('/api/auth/register', async (req, res) => {
     // ---- 查询刚插入的用户信息 ----
     const newUser = dbGetOne(
       db,
-      'SELECT user_id AS id, phone, nickname, role FROM users WHERE phone = ?',
+      'SELECT id, phone, nickname, role FROM users WHERE phone = ?',
       [phone]
     );
 
@@ -209,7 +209,7 @@ app.post('/api/auth/login', async (req, res) => {
     // ---- 3. 按手机号查询用户 ----
     const user = dbGetOne(
       db,
-      'SELECT user_id, phone, password_hash, nickname, role, status FROM users WHERE phone = ?',
+      'SELECT id, phone, password_hash, nickname, role, status FROM users WHERE phone = ?',
       [phone]
     );
 
@@ -230,14 +230,14 @@ app.post('/api/auth/login', async (req, res) => {
 
     // ---- 7. 生成 JWT Token，payload 包含 id、phone、role，有效期 7 天 ----
     const token = jwt.sign(
-      { id: user.user_id, phone: user.phone, role: user.role },
+      { id: user.id, phone: user.phone, role: user.role },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
 
     // ---- 8. 更新最近登录时间 ----
     const now = new Date().toISOString();
-    db.run('UPDATE users SET updated_at = ? WHERE user_id = ?', [now, user.user_id]);
+    db.run('UPDATE users SET updated_at = ? WHERE id = ?', [now, user.id]);
 
     // ---- 9. 持久化到磁盘 ----
     saveDb();
@@ -248,7 +248,7 @@ app.post('/api/auth/login', async (req, res) => {
       message: '登录成功',
       data: {
         token,
-        id: user.user_id,
+        id: user.id,
         phone: user.phone,
         nickname: user.nickname,
         role: user.role
@@ -428,6 +428,114 @@ app.delete('/api/devices/:id', authenticateToken, async (req, res) => {
     res.json({ code: 0, message: '设备删除成功', data: null });
   } catch (err) {
     console.error('[删除设备] 服务器错误：', err);
+    res.status(500).json({ code: 5001, message: '服务器内部错误', data: null });
+  }
+});
+
+// =====================================================
+// 睡眠报告接口（均需登录）
+// =====================================================
+
+/**
+ * 确定性伪随机数生成器（LCG 算法）
+ * 给定相同 seed，始终生成相同的随机序列，保证同用户同日期数据一致。
+ * @param {number} seed - 种子值
+ * @returns {Function} 返回 0-1 之间随机数的函数
+ */
+function seededRandom(seed) {
+  let s = seed | 0;
+  return function () {
+    s = (s * 1103515245 + 12345) & 0x7fffffff;
+    return s / 0x7fffffff;
+  };
+}
+
+// =====================================================
+// 获取每日睡眠报告 GET /api/sleep/report/daily
+// =====================================================
+app.get('/api/sleep/report/daily', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const db = await getDb();
+
+    // ---- 1. 解析日期参数，默认昨天 ----
+    let reportDate;
+    if (req.query.date && /^\d{4}-\d{2}-\d{2}$/.test(req.query.date)) {
+      reportDate = req.query.date;
+    } else {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      reportDate = yesterday.toISOString().slice(0, 10);
+    }
+
+    // ---- 2. 获取用户第一台设备 ----
+    const firstDevice = dbGetOne(
+      db,
+      'SELECT id FROM devices WHERE user_id = ? LIMIT 1',
+      [userId]
+    );
+    const deviceId = firstDevice ? firstDevice.id : 0;
+
+    // ---- 3. 查询是否已有今日报告 ----
+    const existReport = dbGetOne(
+      db,
+      'SELECT * FROM sleep_reports WHERE user_id = ? AND device_id = ? AND report_date = ?',
+      [userId, deviceId, reportDate]
+    );
+
+    // ---- 4. 已有报告直接返回 ----
+    if (existReport) {
+      return res.json({ code: 0, message: 'success', data: existReport });
+    }
+
+    // ---- 5. 生成模拟睡眠数据 ----
+    // 种子 = userId * 10000 + 日期数字，保证同用户同日期数据一致
+    const dateNum = parseInt(reportDate.replace(/-/g, ''), 10);
+    const rand = seededRandom(userId * 10000 + dateNum);
+
+    const sleepScore = Math.floor(60 + rand() * 40);                // 60-100
+    const totalSleep = Math.floor(300 + rand() * 180);              // 300-480 分钟
+    const deepRatio = 0.15 + rand() * 0.20;                         // 0.15-0.35
+    const remRatio = 0.20 + rand() * 0.05;                          // 0.20-0.25
+    const awakeMinutes = Math.floor(rand() * 20);                   // 0-20 分钟
+    const awakeCount = Math.floor(rand() * 6);                      // 0-5 次
+
+    const deepSleep = Math.floor(totalSleep * deepRatio);
+    const remSleep = Math.floor(totalSleep * remRatio);
+    const lightSleep = totalSleep - deepSleep - remSleep - awakeMinutes;
+
+    // ---- 6. 插入新报告 ----
+    const emptyJson = '[]';
+    db.run(
+      `INSERT INTO sleep_reports
+        (user_id, device_id, report_date, sleep_score, total_sleep_minutes,
+         deep_sleep_minutes, light_sleep_minutes, rem_sleep_minutes,
+         awake_minutes, awake_count, heart_rate_json, sleep_stages_json, noise_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        userId, deviceId, reportDate, sleepScore, totalSleep,
+        deepSleep, lightSleep, remSleep,
+        awakeMinutes, awakeCount, emptyJson, emptyJson, emptyJson
+      ]
+    );
+
+    // ---- 7. 持久化到磁盘 ----
+    saveDb();
+
+    // ---- 8. 查询并返回新记录 ----
+    const newReport = dbGetOne(
+      db,
+      'SELECT * FROM sleep_reports WHERE user_id = ? AND device_id = ? AND report_date = ?',
+      [userId, deviceId, reportDate]
+    );
+
+    res.json({ code: 0, message: 'success', data: newReport });
+  } catch (err) {
+    // 捕获 UNIQUE 约束异常（并发插入同一用户同日期报告）
+    if (err.message && err.message.includes('UNIQUE constraint failed')) {
+      return res.json({ code: 3001, message: '该日期报告已存在', data: null });
+    }
+    console.error('[睡眠报告] 服务器错误：', err);
     res.status(500).json({ code: 5001, message: '服务器内部错误', data: null });
   }
 });

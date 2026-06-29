@@ -20,7 +20,7 @@ async function initSchema() {
   // =====================================================
   db.run(`
     CREATE TABLE IF NOT EXISTS users (
-      user_id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      id              INTEGER PRIMARY KEY AUTOINCREMENT,
       phone           TEXT    NOT NULL UNIQUE,
       password_hash   TEXT    NOT NULL,
       nickname        TEXT    NOT NULL DEFAULT '用户',
@@ -55,7 +55,7 @@ async function initSchema() {
       online_status INTEGER NOT NULL DEFAULT 1,
       created_at    TEXT    NOT NULL DEFAULT (datetime('now')),
       updated_at    TEXT    NOT NULL DEFAULT (datetime('now')),
-      FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
   `);
   console.log('[Schema] ✓ devices 表');
@@ -65,26 +65,23 @@ async function initSchema() {
   // =====================================================
   db.run(`
     CREATE TABLE IF NOT EXISTS sleep_reports (
-      report_id         INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id           INTEGER NOT NULL,
-      device_id         INTEGER NOT NULL,
-      report_date       TEXT    NOT NULL,
-      sleep_score       INTEGER NOT NULL DEFAULT 0,
-      total_minutes     INTEGER NOT NULL DEFAULT 0,
-      deep_minutes      INTEGER NOT NULL DEFAULT 0,
-      rem_minutes       INTEGER NOT NULL DEFAULT 0,
-      light_minutes     INTEGER NOT NULL DEFAULT 0,
-      wake_minutes      INTEGER NOT NULL DEFAULT 0,
-      avg_heart_rate    REAL    NULL,
-      events_json       TEXT    NULL,
-      heart_rate_curve  TEXT    NULL,
-      respiration_curve TEXT    NULL,
-      stage_curve       TEXT    NULL,
-      noise_curve       TEXT    NULL,
-      created_at        TEXT    NOT NULL DEFAULT (datetime('now','localtime')),
-      FOREIGN KEY (user_id)   REFERENCES users(user_id)   ON DELETE CASCADE,
-      FOREIGN KEY (device_id) REFERENCES devices(id) ON DELETE CASCADE,
-      UNIQUE(user_id, report_date)
+      id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id             INTEGER NOT NULL,
+      device_id           INTEGER NOT NULL,
+      report_date         TEXT    NOT NULL,
+      sleep_score         INTEGER NOT NULL,
+      total_sleep_minutes INTEGER NOT NULL,
+      deep_sleep_minutes  INTEGER NOT NULL,
+      light_sleep_minutes INTEGER NOT NULL,
+      rem_sleep_minutes   INTEGER NOT NULL,
+      awake_minutes       INTEGER NOT NULL DEFAULT 0,
+      awake_count         INTEGER NOT NULL DEFAULT 0,
+      heart_rate_json     TEXT,
+      sleep_stages_json   TEXT,
+      noise_json          TEXT,
+      created_at          TEXT    NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id)   REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (device_id) REFERENCES devices(id) ON DELETE CASCADE
     );
   `);
   console.log('[Schema] ✓ sleep_reports 表');
@@ -107,7 +104,7 @@ async function initSchema() {
       dnd_start              TEXT    NOT NULL DEFAULT '23:00:00',
       dnd_end                TEXT    NOT NULL DEFAULT '06:00:00',
       created_at             TEXT    NOT NULL DEFAULT (datetime('now','localtime')),
-      FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
   `);
   console.log('[Schema] ✓ user_settings 表');
@@ -124,8 +121,8 @@ async function initSchema() {
                         CHECK(status IN ('pending','active','expired','revoked')),
       expire_at        TEXT    NOT NULL,
       created_at       TEXT    NOT NULL DEFAULT (datetime('now','localtime')),
-      FOREIGN KEY (patient_user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-      FOREIGN KEY (doctor_user_id)  REFERENCES users(user_id) ON DELETE CASCADE
+      FOREIGN KEY (patient_user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (doctor_user_id)  REFERENCES users(id) ON DELETE CASCADE
     );
   `);
   console.log('[Schema] ✓ doctor_authorizations 表');
