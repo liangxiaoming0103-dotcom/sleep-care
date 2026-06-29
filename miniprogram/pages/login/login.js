@@ -19,7 +19,7 @@ Page({
     const token = wx.getStorageSync('token');
     if (token) {
       // 已有登录凭证，直接跳转设备页
-      wx.navigateTo({ url: '/pages/devices/devices' });
+      wx.navigateTo({ url: '/pages/home/home' });
     }
   },
 
@@ -71,7 +71,7 @@ Page({
           wx.showToast({ title: '登录成功', icon: 'success' });
 
           // 跳转到设备管理页
-          wx.navigateTo({ url: '/pages/devices/devices' });
+          wx.navigateTo({ url: '/pages/home/home' });
         } else {
           // 服务端返回的业务错误（密码错误、用户不存在等）
           wx.showToast({ title: res.data.message, icon: 'none' });

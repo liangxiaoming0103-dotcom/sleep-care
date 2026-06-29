@@ -123,7 +123,8 @@ async function initSchema() {
       created_at       TEXT    NOT NULL DEFAULT (datetime('now','localtime')),
       FOREIGN KEY (patient_user_id) REFERENCES users(id) ON DELETE CASCADE,
       FOREIGN KEY (doctor_user_id)  REFERENCES users(id) ON DELETE CASCADE
-    );
+
+      );
   `);
   console.log('[Schema] ✓ doctor_authorizations 表');
 

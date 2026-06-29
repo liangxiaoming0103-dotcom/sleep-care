@@ -1,0 +1,97 @@
+<!--pages/home/home.wxml-->
+<!-- 首页：昨日睡眠报告概览 — 医疗健康风格 -->
+
+<wxs module="util">
+  function deepRatio(deep, total) {
+    if (!total || total === 0) return 0;
+    return Math.round(deep / total * 100);
+  }
+  // 睡眠评分评级
+  function scoreLevel(s) {
+    if (s >= 90) return '优秀';
+    if (s >= 75) return '良好';
+    if (s >= 60) return '一般';
+    return '较差';
+  }
+  // 总时长转小时
+  function toHours(m) {
+    var h = Math.floor(m / 60);
+    var min = m % 60;
+    return h + 'h' + (min > 0 ? ' ' + min + 'min' : '');
+  }
+  module.exports = { deepRatio: deepRatio, scoreLevel: scoreLevel, toHours: toHours };
+</wxs>
+
+<view class="home-container">
+  <!-- 加载状态 -->
+  <view wx:if="{{loading}}" class="status-box">
+    <view class="loading-spinner"></view>
+    <text class="status-text">加载中...</text>
+  </view>
+
+  <!-- 空数据 -->
+  <view wx:elif="{{!sleepData}}" class="status-box">
+    <view class="empty-icon-circle">🌙</view>
+    <text class="status-text">暂无睡眠数据</text>
+    <text class="status-hint">请确认已绑定设备，明日再来查看</text>
+  </view>
+
+  <!-- 正常数据 -->
+  <view wx:else class="report-scroll">
+    <!-- 问候 + 日期 -->
+    <view class="greeting-row">
+      <view class="greeting-left">
+        <text class="greeting-title">早安 🌤</text>
+        <text class="greeting-sub">这是你昨晚的睡眠报告</text>
+      </view>
+      <view class="greeting-date">
+        <text class="date-text">{{sleepData.report_date}}</text>
+      </view>
+    </view>
+
+    <!-- 睡眠评分卡片 -->
+    <view class="score-card">
+      <view class="score-ring">
+        <text class="score-number">{{sleepData.sleep_score}}</text>
+        <text class="score-unit">分</text>
+      </view>
+      <text class="score-level">{{util.scoreLevel(sleepData.sleep_score)}}</text>
+    </view>
+
+    <!-- 三列指标 -->
+    <view class="metrics-row">
+      <view class="metric-item">
+        <view class="metric-icon-box icon-blue">🕐</view>
+        <text class="metric-value">{{util.toHours(sleepData.total_sleep_minutes)}}</text>
+        <text class="metric-label">总睡眠时长</text>
+      </view>
+      <view class="metric-item">
+        <view class="metric-icon-box icon-purple">💤</view>
+        <text class="metric-value">{{util.deepRatio(sleepData.deep_sleep_minutes, sleepData.total_sleep_minutes)}}%</text>
+        <text class="metric-label">深睡比例</text>
+      </view>
+      <view class="metric-item">
+        <view class="metric-icon-box icon-orange">🔔</view>
+        <text class="metric-value">{{sleepData.awake_count}}</text>
+        <text class="metric-label">觉醒次数</text>
+      </view>
+    </view>
+
+    <!-- 睡眠结构卡片 -->
+    <view class="stage-card">
+      <text class="stage-title">睡眠结构</text>
+      <view class="stage-bar">
+        <view class="stage-segment deep" style="flex: {{sleepData.deep_sleep_minutes}}"></view>
+        <view class="stage-segment rem"  style="flex: {{sleepData.rem_sleep_minutes}}"></view>
+        <view class="stage-segment light" style="flex: {{sleepData.light_sleep_minutes}}"></view>
+        <view class="stage-segment awake" style="flex: {{sleepData.awake_minutes}}"></view>
+      </view>
+      <view class="stage-legend">
+        <view class="legend-item"><view class="legend-dot deep-dot"></view><text>深睡 {{sleepData.deep_sleep_minutes}}min</text></view>
+        <view class="legend-item"><view class="legend-dot rem-dot"></view><text>REM {{sleepData.rem_sleep_minutes}}min</text></view>
+        <view class="legend-item"><view class="legend-dot light-dot"></view><text>浅睡 {{sleepData.light_sleep_minutes}}min</text></view>
+        <view class="legend-item"><view class="legend-dot awake-dot"></view><text>清醒 {{sleepData.awake_minutes}}min</text></view>
+      </view>
+    </view>
+  </view>
+</view>
