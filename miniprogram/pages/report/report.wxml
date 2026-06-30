@@ -1,5 +1,5 @@
 <!--pages/report/report.wxml-->
-<!-- 睡眠分期报告页 -->
+<!-- 睡眠报告页：三视图切换（分期 / 噪音 / 趋势） -->
 
 <view class="page-container">
 
@@ -31,137 +31,232 @@
       <view class="nav-arrow {{isToday ? 'nav-disabled' : ''}}" bindtap="onNextDay">▶</view>
     </view>
 
-    <!-- 标题卡片 -->
-    <view class="hero-card">
-      <text class="hero-title">睡眠分期</text>
-      <text class="hero-hint">48 个采样点 · 每 30 秒</text>
-
-      <!-- 四列数字 -->
-      <view class="hero-stats">
-        <view class="hero-stat">
-          <text class="hero-num awake-num">{{awakeCount}}</text>
-          <text class="hero-label">清醒</text>
-        </view>
-        <view class="hero-stat">
-          <text class="hero-num light-num">{{lightCount}}</text>
-          <text class="hero-label">浅睡</text>
-        </view>
-        <view class="hero-stat">
-          <text class="hero-num deep-num">{{deepCount}}</text>
-          <text class="hero-label">深睡</text>
-        </view>
-        <view class="hero-stat">
-          <text class="hero-num rem-num">{{remCount}}</text>
-          <text class="hero-label">REM</text>
-        </view>
+    <!-- 视图切换 -->
+    <view class="tab-bar">
+      <view class="tab-item {{currentTab === 0 ? 'tab-active' : ''}}" bindtap="onSwitchTab" data-tab="{{0}}">
+        <text>睡眠分期</text>
+      </view>
+      <view class="tab-item {{currentTab === 1 ? 'tab-active' : ''}}" bindtap="onSwitchTab" data-tab="{{1}}">
+        <text>环境噪音</text>
+      </view>
+      <view class="tab-item {{currentTab === 2 ? 'tab-active' : ''}}" bindtap="onSwitchTab" data-tab="{{2}}">
+        <text>评分趋势</text>
       </view>
     </view>
 
-    <!-- 睡眠阶段图（hypnogram） -->
-    <view class="chart-card">
-      <text class="section-title">睡眠阶段曲线</text>
+    <!-- ================================================================ -->
+    <!-- 视图 0：睡眠分期 -->
+    <!-- ================================================================ -->
+    <block wx:if="{{currentTab === 0}}">
 
-      <!-- 图例 -->
-      <view class="chart-legend">
-        <view class="legend-item"><view class="ldot ldot-awake"></view>清醒</view>
-        <view class="legend-item"><view class="ldot ldot-light"></view>浅睡</view>
-        <view class="legend-item"><view class="ldot ldot-deep"></view>深睡</view>
-        <view class="legend-item"><view class="ldot ldot-rem"></view>REM</view>
+      <view class="hero-card">
+        <text class="hero-title">睡眠分期</text>
+        <text class="hero-hint">48 个采样点 · 每 30 秒</text>
+        <view class="hero-stats">
+          <view class="hero-stat">
+            <text class="hero-num">{{awakeCount}}</text>
+            <text class="hero-label">清醒</text>
+          </view>
+          <view class="hero-stat">
+            <text class="hero-num">{{lightCount}}</text>
+            <text class="hero-label">浅睡</text>
+          </view>
+          <view class="hero-stat">
+            <text class="hero-num">{{deepCount}}</text>
+            <text class="hero-label">深睡</text>
+          </view>
+          <view class="hero-stat">
+            <text class="hero-num">{{remCount}}</text>
+            <text class="hero-label">REM</text>
+          </view>
+        </view>
       </view>
 
-      <!-- 横向色块条 -->
-      <scroll-view scroll-x class="stage-scroll">
-        <view class="stage-track">
-          <block wx:for="{{stagesData.stages}}" wx:key="index">
-            <view class="stage-block s{{item}}"></view>
-          </block>
+      <view class="chart-card">
+        <text class="section-title">睡眠阶段曲线</text>
+        <view class="chart-legend">
+          <view class="legend-item"><view class="ldot ldot-awake"></view>清醒</view>
+          <view class="legend-item"><view class="ldot ldot-light"></view>浅睡</view>
+          <view class="legend-item"><view class="ldot ldot-deep"></view>深睡</view>
+          <view class="legend-item"><view class="ldot ldot-rem"></view>REM</view>
         </view>
-        <view class="stage-labels">
-          <block wx:for="{{stagesData.labels}}" wx:key="index">
-            <view class="stage-label-slot">
-              <text wx:if="{{index % 12 === 0}}" class="stage-label-text">{{item}}</text>
-            </view>
-          </block>
-        </view>
-      </scroll-view>
-    </view>
-
-    <!-- Y轴柱状图 -->
-    <view class="bar-card">
-      <text class="section-title">分期柱状图</text>
-
-      <view class="chart-legend">
-        <view class="legend-item"><view class="ldot ldot-awake"></view>清醒</view>
-        <view class="legend-item"><view class="ldot ldot-light"></view>浅睡</view>
-        <view class="legend-item"><view class="ldot ldot-deep"></view>深睡</view>
-        <view class="legend-item"><view class="ldot ldot-rem"></view>REM</view>
-      </view>
-
-      <view class="bar-body">
-        <view class="y-axis">
-          <text>REM</text><text>深睡</text><text>浅睡</text><text>清醒</text>
-        </view>
-        <scroll-view scroll-x class="bar-scroll">
-          <view class="bar-row">
+        <scroll-view scroll-x class="stage-scroll">
+          <view class="stage-track">
             <block wx:for="{{stagesData.stages}}" wx:key="index">
-              <view class="bar-col">
-                <view class="bar b{{item}}" style="height: {{item == 0 ? 28 : item == 1 ? 62 : item == 2 ? 120 : 94}}rpx;"></view>
-              </view>
+              <view class="stage-block s{{item}}"></view>
             </block>
           </view>
-          <view class="bar-labels">
+          <view class="stage-labels">
             <block wx:for="{{stagesData.labels}}" wx:key="index">
-              <view class="bar-label-col">
-                <text wx:if="{{index % 6 === 0}}" class="bar-label-text">{{item}}</text>
+              <view class="stage-label-slot">
+                <text wx:if="{{index % 12 === 0}}" class="stage-label-text">{{item}}</text>
               </view>
             </block>
           </view>
         </scroll-view>
       </view>
-    </view>
 
-    <!-- 占比 -->
-    <view class="ratio-card">
-      <text class="section-title">阶段占比</text>
-      <view class="ratio-bar">
-        <view class="ratio-seg r-awake" style="flex: {{awakeCount}}"></view>
-        <view class="ratio-seg r-light" style="flex: {{lightCount}}"></view>
-        <view class="ratio-seg r-deep" style="flex: {{deepCount}}"></view>
-        <view class="ratio-seg r-rem" style="flex: {{remCount}}"></view>
-      </view>
-      <view class="ratio-labels">
-        <text>清醒 {{awakePercent}}%</text>
-        <text>浅睡 {{lightPercent}}%</text>
-        <text>深睡 {{deepPercent}}%</text>
-        <text>REM {{remPercent}}%</text>
-      </view>
-    </view>
-
-    <!-- 环境噪音曲线 -->
-    <view class="noise-card">
-      <text class="noise-title">环境噪音</text>
-      <text class="noise-subtitle">24 小时 · 每 10 分钟一个采样点 · 共 144 个</text>
-
-      <view class="noise-body">
-        <view class="y-axis y-axis-db">
-          <text>65dB</text><text>50dB</text><text>35dB</text><text>20dB</text>
+      <view class="bar-card">
+        <text class="section-title">分期柱状图</text>
+        <view class="chart-legend">
+          <view class="legend-item"><view class="ldot ldot-awake"></view>清醒</view>
+          <view class="legend-item"><view class="ldot ldot-light"></view>浅睡</view>
+          <view class="legend-item"><view class="ldot ldot-deep"></view>深睡</view>
+          <view class="legend-item"><view class="ldot ldot-rem"></view>REM</view>
         </view>
-        <scroll-view scroll-x class="bar-scroll">
-          <view class="noise-row">
-            <block wx:for="{{noiseData.noise}}" wx:key="index">
-              <view class="noise-bar" style="height: {{(item - 20) / 45 * 100}}%;"></view>
-            </block>
+        <view class="bar-body">
+          <view class="y-axis">
+            <text>REM</text><text>深睡</text><text>浅睡</text><text>清醒</text>
           </view>
-          <view class="noise-labels">
-            <block wx:for="{{noiseData.labels}}" wx:key="index">
-              <view class="noise-label-col">
-                <text wx:if="{{index % 24 === 0}}" class="noise-label-text">{{item}}</text>
-              </view>
-            </block>
-          </view>
-        </scroll-view>
+          <scroll-view scroll-x class="bar-scroll">
+            <view class="bar-row">
+              <block wx:for="{{stagesData.stages}}" wx:key="index">
+                <view class="bar-col">
+                  <view class="bar b{{item}}" style="height: {{item == 0 ? 28 : item == 1 ? 62 : item == 2 ? 120 : 94}}rpx;"></view>
+                </view>
+              </block>
+            </view>
+            <view class="bar-labels">
+              <block wx:for="{{stagesData.labels}}" wx:key="index">
+                <view class="bar-label-col">
+                  <text wx:if="{{index % 6 === 0}}" class="bar-label-text">{{item}}</text>
+                </view>
+              </block>
+            </view>
+          </scroll-view>
+        </view>
       </view>
-    </view>
+
+      <view class="ratio-card">
+        <text class="section-title">阶段占比</text>
+        <view class="ratio-bar">
+          <view class="ratio-seg r-awake" style="flex: {{awakeCount}}"></view>
+          <view class="ratio-seg r-light" style="flex: {{lightCount}}"></view>
+          <view class="ratio-seg r-deep" style="flex: {{deepCount}}"></view>
+          <view class="ratio-seg r-rem" style="flex: {{remCount}}"></view>
+        </view>
+        <view class="ratio-labels">
+          <text>清醒 {{awakePercent}}%</text>
+          <text>浅睡 {{lightPercent}}%</text>
+          <text>深睡 {{deepPercent}}%</text>
+          <text>REM {{remPercent}}%</text>
+        </view>
+      </view>
+
+    </block>
+
+    <!-- ================================================================ -->
+    <!-- 视图 1：环境噪音 -->
+    <!-- ================================================================ -->
+    <block wx:if="{{currentTab === 1}}">
+
+      <view class="hero-card">
+        <text class="hero-title">环境噪音</text>
+        <text class="hero-hint">24 小时 · 每 10 分钟 · 共 144 个采样点</text>
+        <view class="hero-stats">
+          <view class="hero-stat">
+            <text class="hero-num">{{noiseData ? noiseData.noiseMin : '-'}}</text>
+            <text class="hero-label">最低 dB</text>
+          </view>
+          <view class="hero-stat">
+            <text class="hero-num">{{noiseData ? noiseData.noiseMax : '-'}}</text>
+            <text class="hero-label">最高 dB</text>
+          </view>
+          <view class="hero-stat">
+            <text class="hero-num">{{noiseData ? noiseData.noiseAvg : '-'}}</text>
+            <text class="hero-label">平均 dB</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="noise-card">
+        <text class="section-title">噪音曲线</text>
+        <view class="noise-body">
+          <view class="y-axis y-axis-db">
+            <text>65dB</text><text>50dB</text><text>35dB</text><text>20dB</text>
+          </view>
+          <scroll-view scroll-x class="bar-scroll">
+            <view class="noise-row">
+              <block wx:for="{{noiseData.noise}}" wx:key="index">
+                <view class="noise-bar" style="height: {{(item - 20) / 45 * 100}}%;"></view>
+              </block>
+            </view>
+            <view class="noise-labels">
+              <block wx:for="{{noiseData.labels}}" wx:key="index">
+                <view class="noise-label-col">
+                  <text wx:if="{{index % 24 === 0}}" class="noise-label-text">{{item}}</text>
+                </view>
+              </block>
+            </view>
+          </scroll-view>
+        </view>
+      </view>
+
+    </block>
+
+    <!-- ================================================================ -->
+    <!-- 视图 2：评分趋势 -->
+    <!-- ================================================================ -->
+    <block wx:if="{{currentTab === 2}}">
+
+      <view class="hero-card">
+        <text class="hero-title">评分趋势</text>
+        <text class="hero-hint">{{trendPeriod === 'day' ? '近7天' : trendPeriod === 'week' ? '近6周' : '近6月'}} · 均分 {{trendAvg}}</text>
+        <view class="hero-stats" style="justify-content: center;">
+          <view class="hero-stat">
+            <text class="hero-num">{{trendAvg}}</text>
+            <text class="hero-label">平均评分</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 趋势子切换 -->
+      <view class="subtab-bar">
+        <view class="subtab-item {{trendPeriod === 'day' ? 'subtab-active' : ''}}" bindtap="onSwitchTrend" data-period="day">
+          <text>日</text>
+        </view>
+        <view class="subtab-item {{trendPeriod === 'week' ? 'subtab-active' : ''}}" bindtap="onSwitchTrend" data-period="week">
+          <text>周</text>
+        </view>
+        <view class="subtab-item {{trendPeriod === 'month' ? 'subtab-active' : ''}}" bindtap="onSwitchTrend" data-period="month">
+          <text>月</text>
+        </view>
+      </view>
+
+      <!-- 柱状图卡片 -->
+      <view class="trend-card">
+        <view class="trend-header">
+          <text class="section-title">{{trendPeriod === 'day' ? '每日评分' : trendPeriod === 'week' ? '每周均分' : '每月均分'}}</text>
+          <view class="trend-avg-tag">均分 <text>{{trendAvg}}</text></view>
+        </view>
+        <view class="bar-body">
+          <view class="y-axis y-axis-4">
+            <text>100</text><text>75</text><text>50</text><text>25</text>
+          </view>
+          <scroll-view scroll-x class="bar-scroll">
+            <view class="bar-row trend-row">
+              <block wx:for="{{trendScores}}" wx:key="index">
+                <view class="trend-col">
+                  <text class="trend-value">{{item}}</text>
+                  <view
+                    class="trend-bar trend-{{item < 60 ? 'low' : item < 75 ? 'mid' : item < 90 ? 'good' : 'great'}}"
+                    style="height: {{item * 2.4}}rpx;"
+                  ></view>
+                </view>
+              </block>
+            </view>
+            <view class="bar-labels">
+              <block wx:for="{{trendLabels}}" wx:key="index">
+                <view class="trend-label-col">
+                  <text class="bar-label-text">{{item}}</text>
+                </view>
+              </block>
+            </view>
+          </scroll-view>
+        </view>
+      </view>
+
+    </block>
 
   </block>
 </view>

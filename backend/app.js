@@ -817,16 +817,14 @@ app.get('/api/sleep/noise', authenticateToken, async (req, res) => {
 async function getOrCreateDailyScore(userId, deviceId, dateStr) {
   const db = await getDb();
 
-  // 查询已有记录
-  let row = dbGetOne(db,
-    'SELECT sleep_score FROM sleep_reports WHERE user_id=? AND device_id=? AND report_date=?',
+  const row = dbGetOne(db,
+    'SELECT sleep_score FROM sleep_reports WHERE user_id = ? AND device_id = ? AND report_date = ?',
     [userId, deviceId, dateStr]
   );
   if (row) return row.sleep_score;
 
-  // 不存在 → 生成基础指标
-  const seedKey = `${userId}_${deviceId}_${dateStr}`;
-  const rand = seededRandom(seedKey);
+  // 生成完整报告（复用第4节）
+  const rand = seededRandom(`${userId}_${deviceId}_${dateStr}`);
   const total = Math.floor(300 + rand() * 180);
   const deepR = 0.15 + rand() * 0.20;
   const remR = 0.20 + rand() * 0.05;
@@ -851,108 +849,88 @@ async function getOrCreateDailyScore(userId, deviceId, dateStr) {
     saveDb();
     return score;
   } catch (err) {
-    // 并发插入 → 重新查询
-    row = dbGetOne(db,
+    const retry = dbGetOne(db,
       'SELECT sleep_score FROM sleep_reports WHERE user_id=? AND device_id=? AND report_date=?',
       [userId, deviceId, dateStr]
     );
-    if (row) return row.sleep_score;
-    return null;
+    if (retry) return retry.sleep_score;
+    throw err;
   }
 }
 
+/** 获取 ISO 周数 */
+function getWeekNumber(d) {
+  const temp = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  temp.setDate(temp.getDate() + 3 - (temp.getDay() + 6) % 7);
+  const week1 = new Date(temp.getFullYear(), 0, 4);
+  return 1 + Math.round(((temp - week1) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+}
+
 app.get('/api/sleep/summary', authenticateToken, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const period = req.query.period || 'day';
-    const db = await getDb();
+  const userId = req.user.id;
+  const period = req.query.period || 'day';
+  let baseDate = new Date();
+  if (req.query.date) baseDate = new Date(req.query.date);
+  baseDate.setDate(baseDate.getDate() - 1);
 
-    // 解析基准日期，默认昨天
-    let baseDate;
-    if (req.query.date && /^\d{4}-\d{2}-\d{2}$/.test(req.query.date)) {
-      baseDate = new Date(req.query.date);
-    } else {
-      baseDate = new Date();
-      baseDate.setDate(baseDate.getDate() - 1);
+  const db = await getDb();
+  let deviceId = 0;
+  const devRow = dbGetOne(db, 'SELECT id FROM devices WHERE user_id = ? LIMIT 1', [userId]);
+  if (devRow) deviceId = devRow.id;
+
+  let labels = [], scores = [];
+  let totalSum = 0, totalCount = 0;
+
+  if (period === 'day') {
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(baseDate);
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      const score = await getOrCreateDailyScore(userId, deviceId, dateStr);
+      labels.push(`${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`);
+      scores.push(score);
+      totalSum += score; totalCount++;
     }
-
-    // 获取用户首台设备
-    let deviceId = 0;
-    const deviceRow = dbGetOne(db, 'SELECT id FROM devices WHERE user_id=? LIMIT 1', [userId]);
-    if (deviceRow) deviceId = deviceRow.id;
-
-    const labels = [];
-    const scores = [];
-    let sum = 0, count = 0;
-
-    if (period === 'day') {
-      // 基准日往前推 6 天，共 7 天
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date(baseDate);
-        d.setDate(d.getDate() - i);
-        const ds = d.toISOString().split('T')[0];
-        labels.push(ds);
-        const s = await getOrCreateDailyScore(userId, deviceId, ds);
-        scores.push(s);
-        if (s !== null) { sum += s; count++; }
+  } else if (period === 'week') {
+    const startOfWeek = new Date(baseDate);
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+    for (let w = 5; w >= 0; w--) {
+      const weekStart = new Date(startOfWeek);
+      weekStart.setDate(weekStart.getDate() - w * 7);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+      let weekSum = 0, weekCount = 0;
+      for (let d = new Date(weekStart); d <= weekEnd; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split('T')[0];
+        weekSum += await getOrCreateDailyScore(userId, deviceId, dateStr);
+        weekCount++;
       }
-    } else if (period === 'week') {
-      // 基准日所在周的周日往前推 5 周，共 6 周
-      const dayOfWeek = baseDate.getDay(); // 0=周日
-      const sunday = new Date(baseDate);
-      sunday.setDate(sunday.getDate() - dayOfWeek); // 回到本周日
-
-      for (let i = 5; i >= 0; i--) {
-        const weekStart = new Date(sunday);
-        weekStart.setDate(weekStart.getDate() - i * 7);
-        let weekSum = 0, weekCount = 0;
-        for (let j = 0; j < 7; j++) {
-          const d = new Date(weekStart);
-          d.setDate(d.getDate() + j);
-          const ds = d.toISOString().split('T')[0];
-          const s = await getOrCreateDailyScore(userId, deviceId, ds);
-          if (s !== null) { weekSum += s; weekCount++; }
-        }
-        const avg = weekCount > 0 ? Math.round(weekSum / weekCount * 10) / 10 : 0;
-        const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekEnd.getDate() + 6);
-        labels.push(`${weekStart.toISOString().split('T')[0]} ~ ${weekEnd.toISOString().split('T')[0]}`);
-        scores.push(avg);
-        sum += avg; count++;
-      }
-    } else if (period === 'month') {
-      // 基准日所在月往前推 5 个月，共 6 个月
-      for (let i = 5; i >= 0; i--) {
-        const y = baseDate.getFullYear();
-        const m = baseDate.getMonth() - i;
-        const firstDay = new Date(y, m, 1);
-        const lastDay = new Date(y, m + 1, 0);
-        let monthSum = 0, monthCount = 0;
-        for (let d = 1; d <= lastDay.getDate(); d++) {
-          const ds = `${firstDay.getFullYear()}-${String(firstDay.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-          const s = await getOrCreateDailyScore(userId, deviceId, ds);
-          if (s !== null) { monthSum += s; monthCount++; }
-        }
-        const avg = monthCount > 0 ? Math.round(monthSum / monthCount * 10) / 10 : 0;
-        labels.push(`${firstDay.getFullYear()}-${String(firstDay.getMonth()+1).padStart(2,'0')}`);
-        scores.push(avg);
-        sum += avg; count++;
-      }
-    } else {
-      return res.json({ code: 1001, message: 'period 参数无效，可选 day/week/month', data: null });
+      const avg = parseFloat((weekSum / weekCount).toFixed(1));
+      labels.push(`第${getWeekNumber(weekStart)}周`);
+      scores.push(avg);
+      totalSum += avg; totalCount++;
     }
-
-    const avgScore = count > 0 ? Math.round(sum / count * 10) / 10 : 0;
-
-    res.json({
-      code: 0,
-      message: 'success',
-      data: { period, labels, scores, avg_score: avgScore }
-    });
-  } catch (err) {
-    console.error('[睡眠评分汇总] 服务器错误：', err);
-    res.status(500).json({ code: 5001, message: '服务器内部错误', data: null });
+  } else if (period === 'month') {
+    const startOfMonth = new Date(baseDate.getFullYear(), baseDate.getMonth(), 1);
+    for (let m = 5; m >= 0; m--) {
+      const monthStart = new Date(startOfMonth);
+      monthStart.setMonth(monthStart.getMonth() - m);
+      const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
+      let monthSum = 0, monthCount = 0;
+      for (let d = new Date(monthStart); d <= monthEnd; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split('T')[0];
+        monthSum += await getOrCreateDailyScore(userId, deviceId, dateStr);
+        monthCount++;
+      }
+      const avg = parseFloat((monthSum / monthCount).toFixed(1));
+      labels.push(`${monthStart.getFullYear()}-${String(monthStart.getMonth()+1).padStart(2,'0')}`);
+      scores.push(avg);
+      totalSum += avg; totalCount++;
+    }
   }
+
+  const avgScore = parseFloat((totalSum / totalCount).toFixed(1));
+  res.json({ code: 0, message: 'success', data: { period, labels, scores, avg_score: avgScore } });
 });
 
 // =====================================================

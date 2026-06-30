@@ -1,5 +1,5 @@
 // pages/report/report.js
-// 睡眠分期报告页：日期导航 + 分期图 + 噪音曲线
+// 睡眠报告页：三视图（分期 / 噪音 / 趋势）
 
 const BASE_URL = 'http://localhost:3000';
 const WEEK = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
@@ -11,22 +11,40 @@ Page({
     dateDisplay: '',
     dateWeekday: '',
     isToday: false,
+    loading: true,
+
+    // 视图
+    currentTab: 0,       // 0=分期 1=噪音 2=趋势
+
+    // 分期
     stagesData: null,
+    awakeCount: 0, lightCount: 0, deepCount: 0, remCount: 0,
+    awakePercent: 0, lightPercent: 0, deepPercent: 0, remPercent: 0,
+
+    // 噪音
     noiseData: null,
     noiseEc: {},
-    loading: true,
-    awakeCount: 0, lightCount: 0, deepCount: 0, remCount: 0,
-    awakePercent: 0, lightPercent: 0, deepPercent: 0, remPercent: 0
+
+    // 趋势
+    trendPeriod: 'day',
+    trendScores: [],
+    trendLabels: [],
+    trendAvg: 0,
+    currentPeriod: 'day',
+    summaryData: null,
+    summaryLoading: false,
+    summaryEc: {}
   },
 
   onLoad() {
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
-    const y = new Date(); y.setDate(y.getDate() - 1);
-    this.setData({ selectedDate: y.toISOString().split('T')[0], todayStr });
+    this.setData({ selectedDate: now.toISOString().split('T')[0], todayStr });
     this.syncDateUI();
     this.loadStages();
     this.loadNoise();
+    this.loadTrend();
+    this.loadSummary();
   },
 
   syncDateUI() {
@@ -44,6 +62,8 @@ Page({
     this.syncDateUI();
     this.loadStages();
     this.loadNoise();
+    this.loadTrend();
+    this.loadSummary();
   },
 
   onPrevDay() {
@@ -53,6 +73,8 @@ Page({
     this.syncDateUI();
     this.loadStages();
     this.loadNoise();
+    this.loadTrend();
+    this.loadSummary();
   },
 
   onNextDay() {
@@ -63,10 +85,32 @@ Page({
     this.syncDateUI();
     this.loadStages();
     this.loadNoise();
+    this.loadTrend();
+    this.loadSummary();
   },
 
   /* ================================================================
-     分期数据
+     视图切换
+     ================================================================ */
+  onSwitchTab(e) {
+    const tab = parseInt(e.currentTarget.dataset.tab);
+    this.setData({ currentTab: tab });
+  },
+
+  onSwitchTrend(e) {
+    const period = e.currentTarget.dataset.period;
+    this.switchPeriod(period);
+  },
+
+  /** 切换趋势周期 */
+  switchPeriod(period) {
+    this.setData({ trendPeriod: period, currentPeriod: period });
+    this.loadTrend();
+    this.loadSummary();
+  },
+
+  /* ================================================================
+     分期
      ================================================================ */
   loadStages() {
     const token = getApp().getToken();
@@ -92,14 +136,11 @@ Page({
   },
 
   /* ================================================================
-     噪音数据
+     噪音
      ================================================================ */
   loadNoise() {
     const token = getApp().getToken();
-    if (!token) {
-      wx.redirectTo({ url: '/pages/login/login' });
-      return;
-    }
+    if (!token) { wx.redirectTo({ url: '/pages/login/login' }); return; }
 
     wx.request({
       url: `${BASE_URL}/api/sleep/noise?date=${this.data.selectedDate}`,
@@ -107,24 +148,22 @@ Page({
       header: { 'Authorization': `Bearer ${token}` },
       success: (res) => {
         if (res.data.code === 0) {
-          this.setData({ noiseData: res.data.data, loading: false });
+          const data = res.data.data;
+          const arr = data.noise || [];
+          const min = Math.min(...arr).toFixed(1);
+          const max = Math.max(...arr).toFixed(1);
+          const avg = (arr.reduce((a,b) => a+b, 0) / arr.length).toFixed(1);
+          this.setData({ noiseData: { ...data, noiseMin: min, noiseMax: max, noiseAvg: avg } });
           this.updateNoiseChart();
         } else {
-          wx.showToast({ title: '加载噪音数据失败', icon: 'none' });
-          this.setData({ loading: false });
-          if (res.data.code === 401 || res.data.code === 403) {
-            wx.redirectTo({ url: '/pages/login/login' });
-          }
+          this.setData({ noiseData: null });
+          if (res.data.code === 401 || res.data.code === 403) wx.redirectTo({ url: '/pages/login/login' });
         }
       },
-      fail: () => {
-        wx.showToast({ title: '网络请求失败', icon: 'none' });
-        this.setData({ loading: false });
-      }
+      fail: () => { wx.showToast({ title: '网络请求失败', icon: 'none' }); }
     });
   },
 
-  /** 初始化噪音 ECharts 折线图 */
   initNoiseChart(canvas, width, height, dpr) {
     const echarts = require('../../components/ec-canvas/echarts');
     const chart = echarts.init(canvas, null, { width, height, devicePixelRatio: dpr });
@@ -133,19 +172,99 @@ Page({
     return chart;
   },
 
-  /** 更新噪音图表数据 */
   updateNoiseChart() {
     if (!this.noiseChart) return;
     const data = this.data.noiseData;
     if (!data) return;
 
     const option = {
+      tooltip: { trigger: 'axis', formatter: (params) => { const p = params[0]; return `${p.name}\n噪音: ${p.value} dB`; } },
+      grid: { left: '5%', right: '5%', bottom: '10%', top: '10%', containLabel: true },
+      xAxis: { type: 'category', data: data.labels, axisLabel: { fontSize: 10, interval: 11 } },
+      yAxis: { type: 'value', min: 20, max: 80, splitLine: { show: true, lineStyle: { type: 'dashed', color: '#e8ecf0' } }, axisLabel: { fontSize: 10, formatter: (value) => value + 'dB' } },
+      series: [{ type: 'line', data: data.noise, smooth: true, symbol: 'none', lineStyle: { color: '#4A90D9', width: 2 }, areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(74,144,217,0.4)' }, { offset: 1, color: 'rgba(74,144,217,0.05)' }] } } }]
+    };
+    this.noiseChart.setOption(option);
+  },
+
+  /* ================================================================
+     趋势
+     ================================================================ */
+  loadTrend() {
+    const token = getApp().getToken();
+    if (!token) return;
+
+    wx.request({
+      url: `${BASE_URL}/api/sleep/summary?period=${this.data.trendPeriod}&date=${this.data.selectedDate}`,
+      method: 'GET',
+      header: { 'Authorization': `Bearer ${token}` },
+      success: (res) => {
+        if (res.data.code === 0) {
+          const d = res.data.data;
+          // 缩短月份标签：2026-01 → 26/1月
+          const shortLabels = d.labels.map(l => {
+            const m = l.match(/^(\d{4})-(\d{2})$/);
+            return m ? `${m[1].slice(2)}/${parseInt(m[2])}月` : l;
+          });
+          this.setData({
+            trendScores: d.scores,
+            trendLabels: shortLabels,
+            trendAvg: d.avg_score
+          });
+        }
+      },
+      fail: () => {}
+    });
+  },
+
+  /** 加载评分汇总（独立于 CSS 趋势图） */
+  loadSummary() {
+    const token = getApp().getToken();
+    if (!token) return;
+
+    this.setData({ summaryLoading: true });
+
+    wx.request({
+      url: `${BASE_URL}/api/sleep/summary?period=${this.data.currentPeriod}&date=${this.data.selectedDate}`,
+      method: 'GET',
+      header: { 'Authorization': `Bearer ${token}` },
+      success: (res) => {
+        if (res.data.code === 0) {
+          this.setData({ summaryData: res.data.data, summaryLoading: false });
+          this.updateSummaryChart();
+        } else {
+          this.setData({ summaryLoading: false });
+        }
+      },
+      fail: () => { this.setData({ summaryLoading: false }); }
+    });
+  },
+
+  /** 初始化评分趋势 ECharts 折线图 */
+  initSummaryChart() {
+    const ecComponent = this.selectComponent('#summary-chart');
+    if (!ecComponent) return;
+
+    const that = this;
+    ecComponent.init((canvas, width, height, dpr) => {
+      const echarts = require('../../components/ec-canvas/echarts');
+      const chart = echarts.init(canvas, null, { width, height, devicePixelRatio: dpr });
+      that.summaryChart = chart;
+      that.updateSummaryChart();
+      return chart;
+    });
+  },
+
+  /** 更新评分趋势图表数据 */
+  updateSummaryChart() {
+    if (!this.summaryChart) return;
+    const data = this.data.summaryData;
+    if (!data) return;
+
+    const option = {
       tooltip: {
         trigger: 'axis',
-        formatter: (params) => {
-          const p = params[0];
-          return `${p.name}\n噪音: ${p.value} dB`;
-        }
+        formatter: (params) => `${params[0].name}\n睡眠评分: ${params[0].value}`
       },
       grid: {
         left: '5%',
@@ -157,44 +276,52 @@ Page({
       xAxis: {
         type: 'category',
         data: data.labels,
-        axisLabel: {
-          fontSize: 10,
-          interval: 11
-        }
+        axisLabel: { fontSize: 10 }
       },
       yAxis: {
         type: 'value',
-        min: 20,
-        max: 80,
+        min: 40,
+        max: 100,
         splitLine: {
           show: true,
           lineStyle: { type: 'dashed', color: '#e8ecf0' }
         },
         axisLabel: {
           fontSize: 10,
-          formatter: (value) => value + 'dB'
+          formatter: (value) => value + '分'
         }
       },
       series: [{
         type: 'line',
-        data: data.noise,
-        smooth: true,
-        symbol: 'none',
+        data: data.scores,
+        smooth: false,
+        symbol: 'circle',
+        symbolSize: 6,
         lineStyle: { color: '#4A90D9', width: 2 },
         areaStyle: {
           color: {
             type: 'linear',
             x: 0, y: 0, x2: 0, y2: 1,
             colorStops: [
-              { offset: 0, color: 'rgba(74, 144, 217, 0.4)' },
-              { offset: 1, color: 'rgba(74, 144, 217, 0.05)' }
+              { offset: 0, color: 'rgba(74, 144, 217, 0.3)' },
+              { offset: 1, color: 'rgba(74, 144, 217, 0.03)' }
             ]
+          }
+        },
+        markLine: {
+          silent: true,
+          data: [{ yAxis: data.avg_score }],
+          lineStyle: { color: '#e74c3c', type: 'dashed' },
+          label: {
+            formatter: `平均 ${data.avg_score}分`,
+            color: '#e74c3c',
+            fontSize: 10
           }
         }
       }]
     };
 
-    this.noiseChart.setOption(option);
+    this.summaryChart.setOption(option);
   },
 
   /* ================================================================
@@ -213,5 +340,5 @@ Page({
     };
   },
 
-  onPullDownRefresh() { this.loadStages(); this.loadNoise(); wx.stopPullDownRefresh(); }
+  onPullDownRefresh() { this.loadStages(); this.loadNoise(); this.loadTrend(); this.loadSummary(); wx.stopPullDownRefresh(); }
 });
