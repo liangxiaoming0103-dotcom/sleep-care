@@ -12,35 +12,40 @@
   <view wx:else class="doctor-list">
     <view
       class="doctor-card"
-      wx:for="{{grantedList}}"
+      wx:for="{{list}}"
       wx:key="id"
     >
+      <view class="card-avatar">👨‍⚕️</view>
       <view class="card-info">
-        <view class="card-name">{{item.doctor_name}}</view>
-        <view class="card-phone">{{item.doctor_phone}}</view>
-        <view class="card-status {{item.status}}">
-          {{item.status === 'pending' ? '待确认' : '已授权'}}
+        <view class="card-header">
+          <text class="card-name">{{item.doctor_name || '医生'}}</text>
+          <text class="card-status {{item.status}}">{{item.status === 'pending' ? '待确认' : '已授权'}}</text>
         </view>
+        <view class="card-phone">{{item.doctor_phone}}</view>
         <view class="card-expire">有效期至 {{item.expire_date}}</view>
       </view>
-      <button
-        class="revoke-btn"
-        data-doctor-id="{{item.doctor_id}}"
-        bindtap="handleRevoke"
-      >撤销</button>
+      <view class="card-action">
+        <button
+          class="revoke-btn"
+          data-doctor-id="{{item.doctor_id}}"
+          bindtap="handleRevoke"
+        >撤销</button>
+      </view>
     </view>
-    <view wx:if="{{grantedList.length === 0}}" class="empty">暂无授权记录</view>
+    <view wx:if="{{list.length === 0}}" class="empty">暂无授权记录</view>
   </view>
 
   <!-- 底部添加区域 -->
   <view class="add-section">
-    <input
-      class="phone-input"
-      type="text"
-      placeholder="请输入医生手机号"
-      value="{{doctorPhone}}"
-      bindinput="onPhoneInput"
-    />
-    <button class="add-btn" bindtap="handleAdd">添加</button>
+    <view class="add-row">
+      <input
+        class="phone-input"
+        type="text"
+        placeholder="请输入医生手机号"
+        value="{{doctorPhone}}"
+        bindinput="onPhoneInput"
+      />
+      <button class="add-btn" bindtap="handleAdd" disabled="{{adding}}">{{adding ? '添加中' : '添加'}}</button>
+    </view>
   </view>
 </view>
