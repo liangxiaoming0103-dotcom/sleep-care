@@ -1,474 +1,187 @@
 /* pages/report/report.wxss */
-/* 睡眠分期报告页 — 延续首页医疗健康卡片风格 */
+/* 睡眠分期报告页 — 配色与首页统一 */
 
-/* =====================================================
-   页面容器
-   ===================================================== */
 .page-container {
   min-height: 100vh;
   background: linear-gradient(180deg, #eef2ff 0%, #f5f7fa 40%);
-  display: flex;
-  flex-direction: column;
   padding: 0 28rpx 60rpx;
-}
-
-/* =====================================================
-   日期导航栏 — 左右箭头 + 点击日期弹出选择器
-   ===================================================== */
-.date-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: #ffffff;
-  border-radius: 24rpx;
-  padding: 16rpx 24rpx;
-  margin-bottom: 20rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.04);
-}
-
-.nav-arrow {
-  width: 64rpx;
-  height: 64rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 32rpx;
-  color: #6366f1;
-  background: #eef2ff;
-  border-radius: 50%;
-}
-
-.nav-arrow:active {
-  background: #e0e7ff;
-}
-
-.nav-disabled {
-  opacity: 0.3;
-  pointer-events: none;
-}
-
-.date-center {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4rpx;
-}
-
-.date-main {
-  font-size: 38rpx;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.date-sub {
-  font-size: 22rpx;
-  color: #94a3b8;
-}
-
-/* =====================================================
-   标题
-   ===================================================== */
-.title-row {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 10rpx 0 28rpx;
-}
-
-.title-text {
-  font-size: 40rpx;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.title-hint {
-  font-size: 22rpx;
-  color: #94a3b8;
-  margin-top: 8rpx;
 }
 
 /* =====================================================
    加载 / 空状态
    ===================================================== */
 .loading-box, .empty-box {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 20rpx;
+  flex: 1; display: flex; flex-direction: column;
+  justify-content: center; align-items: center; gap: 20rpx;
+  padding-top: 200rpx;
 }
-
 .loading-spinner {
-  width: 56rpx;
-  height: 56rpx;
-  border: 4rpx solid #e2e8f0;
-  border-top-color: #6366f1;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  width: 56rpx; height: 56rpx;
+  border: 4rpx solid #e2e8f0; border-top-color: #6366f1;
+  border-radius: 50%; animation: spin 0.8s linear infinite;
 }
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.loading-text, .empty-text {
-  font-size: 30rpx;
-  color: #64748b;
-  font-weight: 500;
-}
-
-.empty-hint {
-  font-size: 24rpx;
-  color: #94a3b8;
-}
-
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-size: 28rpx; color: #94a3b8; }
+.empty-text { font-size: 30rpx; color: #64748b; font-weight: 500; }
+.empty-hint { font-size: 24rpx; color: #94a3b8; }
 .empty-icon-circle {
-  width: 120rpx;
-  height: 120rpx;
-  line-height: 120rpx;
-  text-align: center;
-  font-size: 56rpx;
-  background: #eef2ff;
-  border-radius: 50%;
-  margin-bottom: 8rpx;
+  width: 120rpx; height: 120rpx; line-height: 120rpx;
+  text-align: center; font-size: 56rpx;
+  background: #eef2ff; border-radius: 50%;
 }
 
 /* =====================================================
-   分期分布卡片 — 四列环形数值
+   日期导航
    ===================================================== */
-.summary-card {
-  display: flex;
-  justify-content: space-around;
-  background: #ffffff;
-  border-radius: 24rpx;
-  padding: 32rpx 16rpx;
-  margin-bottom: 20rpx;
+.date-nav {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #fff; border-radius: 24rpx;
+  padding: 20rpx 28rpx; margin: 24rpx 0 20rpx;
   box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.04);
 }
-
-.summary-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10rpx;
+.nav-arrow {
+  width: 60rpx; height: 60rpx;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28rpx; color: #6366f1;
+  background: #eef2ff; border-radius: 50%;
 }
-
-.summary-ring {
-  width: 88rpx;
-  height: 88rpx;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.nav-arrow:active { background: #e0e7ff; }
+.nav-disabled { opacity: 0.25; pointer-events: none; }
+.date-center {
+  display: flex; flex-direction: column; align-items: center; gap: 4rpx;
 }
-
-.awake-ring { background: #fff7ed; }
-.light-ring { background: #eef2ff; }
-.deep-ring  { background: #eef2ff; }
-.rem-ring   { background: #f5f3ff; }
-
-.summary-num {
-  font-size: 36rpx;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.summary-label {
-  font-size: 22rpx;
-  color: #94a3b8;
-}
+.date-main { font-size: 36rpx; font-weight: 700; color: #1e293b; }
+.date-sub  { font-size: 22rpx; color: #94a3b8; }
 
 /* =====================================================
-   睡眠分期图卡片
+   标题卡片（渐变 hero）
    ===================================================== */
-.chart-card {
-  background: #ffffff;
-  border-radius: 24rpx;
-  padding: 28rpx 20rpx 20rpx;
+.hero-card {
+  background: linear-gradient(135deg, #4f46e5, #6366f1, #818cf8);
+  border-radius: 28rpx;
+  padding: 36rpx 28rpx 28rpx;
   margin-bottom: 20rpx;
+  box-shadow: 0 12rpx 32rpx rgba(79,70,229,0.3);
+}
+.hero-title {
+  display: block; text-align: center;
+  font-size: 36rpx; font-weight: 700; color: #fff;
+}
+.hero-hint {
+  display: block; text-align: center;
+  font-size: 22rpx; color: rgba(255,255,255,0.7);
+  margin-top: 6rpx; margin-bottom: 28rpx;
+}
+.hero-stats {
+  display: flex; justify-content: space-around;
+}
+.hero-stat {
+  display: flex; flex-direction: column; align-items: center; gap: 6rpx;
+}
+.hero-num {
+  width: 88rpx; height: 88rpx; line-height: 88rpx;
+  text-align: center; border-radius: 50%;
+  font-size: 36rpx; font-weight: 700; color: #fff;
+  background: rgba(255,255,255,0.18);
+}
+.hero-label { font-size: 24rpx; color: rgba(255,255,255,0.8); }
+
+/* =====================================================
+   通用卡片 & 标题
+   ===================================================== */
+.chart-card, .ratio-card, .bar-card {
+  background: #fff; border-radius: 24rpx;
+  padding: 28rpx 24rpx 24rpx; margin-bottom: 20rpx;
   box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.04);
 }
-
-.chart-title {
-  font-size: 30rpx;
-  font-weight: 700;
-  color: #1e293b;
-  display: block;
-  margin-bottom: 18rpx;
+.section-title {
+  font-size: 30rpx; font-weight: 700; color: #1e293b;
+  display: block; margin-bottom: 16rpx;
 }
 
 /* 图例 */
 .chart-legend {
-  display: flex;
-  gap: 24rpx;
-  margin-bottom: 20rpx;
+  display: flex; justify-content: center; gap: 28rpx; margin-bottom: 20rpx;
 }
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 6rpx;
-  font-size: 22rpx;
-  color: #64748b;
-}
-
-.legend-dot {
-  width: 14rpx;
-  height: 14rpx;
-  border-radius: 4rpx;
-}
-
-.awake-dot { background: #fde68a; }
-.light-dot { background: #c7d2fe; }
-.deep-dot  { background: #6366f1; }
-.rem-dot   { background: #a78bfa; }
-
-/* 横向滚动睡眠分期条 */
-.stage-scroll {
-  width: 100%;
-  white-space: nowrap;
-}
-
-.stage-timeline {
-  display: flex;
-  height: 48rpx;
-  border-radius: 12rpx;
-  overflow: hidden;
-}
-
-.stage-block {
-  flex-shrink: 0;
-  width: 14rpx;
-  height: 48rpx;
-}
-
-/* 分期颜色 */
-.stage-0 { background: #fde68a; }
-.stage-1 { background: #c7d2fe; }
-.stage-2 { background: #6366f1; }
-.stage-3 { background: #a78bfa; }
-
-/* 时间标签 */
-.stage-labels {
-  display: flex;
-  margin-top: 10rpx;
-}
-
-.stage-label-col {
-  flex-shrink: 0;
-  width: 14rpx;
-}
-
-.stage-label-text {
-  font-size: 18rpx;
-  color: #94a3b8;
-}
+.legend-item { display: flex; align-items: center; gap: 8rpx; font-size: 24rpx; color: #64748b; }
+.ldot { width: 16rpx; height: 16rpx; border-radius: 4rpx; }
+.ldot-awake { background: #fde68a; }
+.ldot-light { background: #c7d2fe; }
+.ldot-deep  { background: #6366f1; }
+.ldot-rem   { background: #a78bfa; }
 
 /* =====================================================
-   占比条卡片
+   卡片1：hypnogram 横向色块条
    ===================================================== */
-.ratio-card {
-  background: #ffffff;
-  border-radius: 24rpx;
-  padding: 28rpx 24rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.04);
-}
-
-.ratio-title {
-  font-size: 30rpx;
-  font-weight: 700;
-  color: #1e293b;
-  display: block;
-  margin-bottom: 20rpx;
-}
-
-.ratio-bar {
-  display: flex;
-  height: 28rpx;
-  border-radius: 14rpx;
-  overflow: hidden;
-  margin-bottom: 18rpx;
-}
-
-.ratio-seg.awake-seg { background: #fde68a; }
-.ratio-seg.light-seg { background: #c7d2fe; }
-.ratio-seg.deep-seg  { background: #6366f1; }
-.ratio-seg.rem-seg   { background: #a78bfa; }
-
-.ratio-texts {
-  display: flex;
-  justify-content: space-between;
-  font-size: 22rpx;
-  color: #64748b;
-}
-
-/* =====================================================
-   弹窗日历
-   ===================================================== */
-.calendar-mask {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.4);
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: fadeIn 0.2s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-.calendar-popup {
-  width: 620rpx;
-  background: #ffffff;
-  border-radius: 28rpx;
-  padding: 32rpx 28rpx 24rpx;
-  box-shadow: 0 16rpx 48rpx rgba(0,0,0,0.15);
-  animation: slideUp 0.25s ease;
-}
-
-@keyframes slideUp {
-  from { transform: translateY(40rpx); opacity: 0; }
-  to   { transform: translateY(0); opacity: 1; }
-}
-
-/* 头部 */
-.cal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 24rpx;
-}
-
-.cal-nav {
-  width: 56rpx;
-  height: 56rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 26rpx;
-  color: #6366f1;
-  background: #eef2ff;
-  border-radius: 50%;
-}
-
-.cal-title-box {
-  display: flex;
-  align-items: center;
-  gap: 8rpx;
-}
-
-.cal-title {
-  font-size: 32rpx;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.cal-title-arrow {
-  font-size: 20rpx;
-  color: #94a3b8;
-}
-
-/* 星期头 */
-.cal-weekdays {
-  display: flex;
-  margin-bottom: 12rpx;
-}
-
-.cal-wd {
-  flex: 1;
-  text-align: center;
-  font-size: 24rpx;
-  color: #94a3b8;
-  font-weight: 500;
-  padding: 8rpx 0;
-}
-
-/* 日期网格（三视图共用） */
-.cal-grid {
-  display: flex;
-  flex-wrap: wrap;
-}
-
-.cal-day-grid {
-  /* 7 columns — see .cal-day-grid .cal-cell below */
-}
-
-.cal-cell {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28rpx;
-  color: #334155;
-}
-
-/* 日视图 cell */
-.cal-day-grid .cal-cell {
-  width: calc(100% / 7);
-  aspect-ratio: 1;
-}
-
-.cal-empty { pointer-events: none; }
-
-.cal-future { pointer-events: none; opacity: 0.3; }
-
-.cal-today { color: #6366f1; font-weight: 700; }
-
-.cal-selected {
-  background: #6366f1;
-  border-radius: 50%;
-  color: #ffffff;
-  font-weight: 700;
-}
-
-/* 月视图 cell */
-.cal-month-grid .cal-cell {
-  width: calc(100% / 4);
-  padding: 28rpx 0;
-}
-
-.cal-month-cell.cal-selected {
-  border-radius: 16rpx;
-}
-
-/* 年视图 cell */
-.cal-year-grid .cal-cell {
-  width: calc(100% / 5);
-  padding: 24rpx 0;
-}
-
-.cal-year-cell.cal-selected {
-  border-radius: 16rpx;
-}
-
-/* 底部 */
-.cal-footer {
-  display: flex;
-  gap: 20rpx;
-  margin-top: 24rpx;
-  padding-top: 20rpx;
-  border-top: 1rpx solid #f1f5f9;
-}
-
-.cal-btn {
-  flex: 1;
-  text-align: center;
-  padding: 18rpx 0;
-  border-radius: 16rpx;
-  font-size: 26rpx;
-  font-weight: 500;
-}
-
-.cal-btn-cancel {
+.stage-scroll { width: 100%; white-space: nowrap; }
+.stage-track {
+  display: flex; height: 56rpx;
+  border-radius: 14rpx; overflow: hidden;
   background: #f1f5f9;
-  color: #64748b;
 }
+.stage-block {
+  flex-shrink: 0; width: 14rpx; height: 56rpx;
+}
+.s0 { background: #fde68a; }
+.s1 { background: #c7d2fe; }
+.s2 { background: #6366f1; }
+.s3 { background: #a78bfa; }
 
-.cal-btn-today {
-  background: linear-gradient(135deg, #4f46e5, #6366f1);
-  color: #ffffff;
+.stage-labels { display: flex; margin-top: 10rpx; }
+.stage-label-slot { flex-shrink: 0; width: 14rpx; }
+.stage-label-text { font-size: 18rpx; color: #94a3b8; }
+
+/* =====================================================
+   卡片2：Y轴柱状图
+   ===================================================== */
+.bar-body {
+  display: flex;
+  background: #f8fafc;
+  border-radius: 16rpx;
+  padding: 20rpx 12rpx 8rpx 8rpx;
+}
+.y-axis {
+  display: flex; flex-direction: column;
+  justify-content: space-between;
+  padding: 0 14rpx 42rpx 0;
+  font-size: 20rpx; color: #94a3b8; font-weight: 500;
+  width: 56rpx; text-align: right; flex-shrink: 0;
+}
+.bar-scroll { flex: 1; overflow-x: auto; white-space: nowrap; }
+.bar-row {
+  display: flex; align-items: flex-end;
+  height: 180rpx; gap: 4rpx; padding: 0 4rpx;
+}
+.bar-col {
+  flex-shrink: 0; width: 18rpx;
+  display: flex; flex-direction: column; justify-content: flex-end;
+}
+.bar {
+  width: 18rpx; border-radius: 5rpx 5rpx 2rpx 2rpx;
+}
+.b0 { background: #fde68a; box-shadow: 0 2rpx 6rpx rgba(253,230,138,0.4); }
+.b1 { background: #c7d2fe; box-shadow: 0 2rpx 6rpx rgba(199,210,254,0.4); }
+.b2 { background: #6366f1; box-shadow: 0 2rpx 6rpx rgba(99,102,241,0.4); }
+.b3 { background: #a78bfa; box-shadow: 0 2rpx 6rpx rgba(167,139,250,0.4); }
+
+.bar-labels { display: flex; margin-top: 10rpx; }
+.bar-label-col { flex-shrink: 0; width: 22rpx; }
+.bar-label-text { font-size: 18rpx; color: #94a3b8; }
+
+/* =====================================================
+   卡片3：占比条
+   ===================================================== */
+.ratio-bar {
+  display: flex; height: 32rpx;
+  border-radius: 16rpx; overflow: hidden;
+  margin: 20rpx 0 16rpx;
+}
+.ratio-seg { min-width: 4rpx; }
+.r-awake { background: #fde68a; }
+.r-light { background: #c7d2fe; }
+.r-deep  { background: #6366f1; }
+.r-rem   { background: #a78bfa; }
+.ratio-labels {
+  display: flex; justify-content: space-between;
+  font-size: 24rpx; color: #64748b;
 }

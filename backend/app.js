@@ -584,29 +584,43 @@ app.get('/api/sleep/stages', authenticateToken, async (req, res) => {
     [userId, deviceId, dateStr]
   );
 
-  // 2. 如果记录不存在，先插入基础数据（复用第4节逻辑）
+  // 2. 若不存在，生成基础指标并插入（复用第4节逻辑）
   if (!report) {
     const seedKey = `${userId}_${deviceId}_${dateStr}`;
     const rand = seededRandom(seedKey);
-    const metrics = generateBaseMetrics(rand);
-    const { totalSleep, deepSleep, remSleep, lightSleep, sleepScore, awakeCount, awakeMinutes } = metrics;
-
-    db.run(
-      `INSERT INTO sleep_reports
-        (user_id, device_id, report_date, sleep_score, total_sleep_minutes,
-         deep_sleep_minutes, light_sleep_minutes, rem_sleep_minutes,
-         awake_minutes, awake_count, heart_rate_json, sleep_stages_json, noise_json)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [userId, deviceId, dateStr, sleepScore, totalSleep,
-       deepSleep, lightSleep, remSleep,
-       awakeMinutes, awakeCount, '[]', '[]', '[]']
-    );
-    saveDb();
-    report = dbGetOne(
-      db,
-      'SELECT * FROM sleep_reports WHERE user_id = ? AND device_id = ? AND report_date = ?',
-      [userId, deviceId, dateStr]
-    );
+    const total = Math.floor(300 + rand() * 180);
+    const deepR = 0.15 + rand() * 0.20;
+    const remR = 0.20 + rand() * 0.05;
+    const deep = Math.floor(total * deepR);
+    const rem = Math.floor(total * remR);
+    const light = total - deep - rem;
+    const score = Math.floor(60 + rand() * 40);
+    const awake = Math.floor(rand() * 6);
+    const awakeMin = Math.floor(rand() * 30);
+    try {
+      db.run(
+        `INSERT INTO sleep_reports
+          (user_id, device_id, report_date, sleep_score, total_sleep_minutes,
+           deep_sleep_minutes, light_sleep_minutes, rem_sleep_minutes,
+           awake_minutes, awake_count, heart_rate_json, sleep_stages_json, noise_json)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [userId, deviceId, dateStr, score, total,
+         deep, light, rem,
+         awakeMin, awake, '[]', '[]', '[]']
+      );
+      saveDb();
+      report = dbGetOne(
+        db,
+        'SELECT * FROM sleep_reports WHERE user_id = ? AND device_id = ? AND report_date = ?',
+        [userId, deviceId, dateStr]
+      );
+    } catch (err) {
+      // 处理重复
+      report = dbGetOne(db,
+        'SELECT * FROM sleep_reports WHERE user_id=? AND device_id=? AND report_date=?',
+        [userId, deviceId, dateStr]);
+      if (!report) return res.json({ code: 1001, message: '生成报告失败' });
+    }
   }
 
   // 3. 检查 sleep_stages_json 字段
@@ -633,9 +647,9 @@ app.get('/api/sleep/stages', authenticateToken, async (req, res) => {
   const TOTAL_POINTS = 48;
   const newStages = [];
   for (let i = 0; i < TOTAL_POINTS; i++) {
-    const position = i / TOTAL_POINTS;
-    let deepProb = Math.max(0.1, 0.6 - position * 0.8);
-    let remProb = Math.min(0.6, 0.1 + position * 0.5);
+    const pos = i / TOTAL_POINTS;
+    let deepProb = Math.max(0.1, 0.6 - pos * 0.8);
+    let remProb = Math.min(0.6, 0.1 + pos * 0.5);
     let lightProb = 0.25 + rand() * 0.2;
     const r = rand();
     let stage;

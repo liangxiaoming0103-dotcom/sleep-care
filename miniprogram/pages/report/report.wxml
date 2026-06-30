@@ -1,73 +1,84 @@
 <!--pages/report/report.wxml-->
-<!-- 睡眠分期报告页：箭頭切換 + 彈窗日曆 + 睡眠分期圖 -->
+<!-- 睡眠分期报告页 -->
 
 <view class="page-container">
-  <!-- 1. 日期導航欄 -->
-  <view class="date-nav">
-    <view class="nav-arrow" bindtap="onPrevDay"><text>◀</text></view>
-    <view class="date-center" bindtap="onShowCalendar">
-      <text class="date-main">{{dateDisplay}}</text>
-      <text class="date-sub">点击选日期 · {{dateWeekday}}</text>
-    </view>
-    <view class="nav-arrow {{isToday ? 'nav-disabled' : ''}}" bindtap="onNextDay"><text>▶</text></view>
-  </view>
 
-  <!-- 2. 加载 -->
+  <!-- 加载中 -->
   <view wx:if="{{loading}}" class="loading-box">
     <view class="loading-spinner"></view>
     <text class="loading-text">加载中...</text>
   </view>
 
-  <!-- 3. 空数据 -->
-  <view wx:elif="{{stages.length === 0}}" class="empty-box">
+  <!-- 无数据 -->
+  <view wx:elif="{{!stagesData}}" class="empty-box">
     <view class="empty-icon-circle">🌙</view>
     <text class="empty-text">暂无该日睡眠分期数据</text>
     <text class="empty-hint">请选择其他日期查看</text>
   </view>
 
-  <!-- 4. 正常内容 -->
+  <!-- 主内容 -->
   <block wx:else>
-    <view class="title-row">
-      <text class="title-text">睡眠分期</text>
-      <text class="title-hint">每 30 秒一个采样点 · 共 48 个数据点</text>
+
+    <!-- 日期导航 -->
+    <view class="date-nav">
+      <view class="nav-arrow" bindtap="onPrevDay">◀</view>
+      <picker mode="date" value="{{selectedDate}}" end="{{todayStr}}" bindchange="onDateChange">
+        <view class="date-center">
+          <text class="date-main">{{dateDisplay}}</text>
+          <text class="date-sub">{{dateWeekday}}</text>
+        </view>
+      </picker>
+      <view class="nav-arrow {{isToday ? 'nav-disabled' : ''}}" bindtap="onNextDay">▶</view>
     </view>
 
-    <view class="summary-card">
-      <view class="summary-item">
-        <view class="summary-ring awake-ring"><text class="summary-num">{{awakeCount}}</text></view>
-        <text class="summary-label">清醒</text>
-      </view>
-      <view class="summary-item">
-        <view class="summary-ring light-ring"><text class="summary-num">{{lightCount}}</text></view>
-        <text class="summary-label">浅睡</text>
-      </view>
-      <view class="summary-item">
-        <view class="summary-ring deep-ring"><text class="summary-num">{{deepCount}}</text></view>
-        <text class="summary-label">深睡</text>
-      </view>
-      <view class="summary-item">
-        <view class="summary-ring rem-ring"><text class="summary-num">{{remCount}}</text></view>
-        <text class="summary-label">REM</text>
+    <!-- 标题卡片 -->
+    <view class="hero-card">
+      <text class="hero-title">睡眠分期</text>
+      <text class="hero-hint">48 个采样点 · 每 30 秒</text>
+
+      <!-- 四列数字 -->
+      <view class="hero-stats">
+        <view class="hero-stat">
+          <text class="hero-num awake-num">{{awakeCount}}</text>
+          <text class="hero-label">清醒</text>
+        </view>
+        <view class="hero-stat">
+          <text class="hero-num light-num">{{lightCount}}</text>
+          <text class="hero-label">浅睡</text>
+        </view>
+        <view class="hero-stat">
+          <text class="hero-num deep-num">{{deepCount}}</text>
+          <text class="hero-label">深睡</text>
+        </view>
+        <view class="hero-stat">
+          <text class="hero-num rem-num">{{remCount}}</text>
+          <text class="hero-label">REM</text>
+        </view>
       </view>
     </view>
 
+    <!-- 睡眠阶段图（hypnogram） -->
     <view class="chart-card">
-      <text class="chart-title">睡眠阶段曲线</text>
+      <text class="section-title">睡眠阶段曲线</text>
+
+      <!-- 图例 -->
       <view class="chart-legend">
-        <view class="legend-item"><view class="legend-dot awake-dot"></view><text>清醒</text></view>
-        <view class="legend-item"><view class="legend-dot light-dot"></view><text>浅睡</text></view>
-        <view class="legend-item"><view class="legend-dot deep-dot"></view><text>深睡</text></view>
-        <view class="legend-item"><view class="legend-dot rem-dot"></view><text>REM</text></view>
+        <view class="legend-item"><view class="ldot ldot-awake"></view>清醒</view>
+        <view class="legend-item"><view class="ldot ldot-light"></view>浅睡</view>
+        <view class="legend-item"><view class="ldot ldot-deep"></view>深睡</view>
+        <view class="legend-item"><view class="ldot ldot-rem"></view>REM</view>
       </view>
+
+      <!-- 横向色块条 -->
       <scroll-view scroll-x class="stage-scroll">
-        <view class="stage-timeline">
-          <block wx:for="{{stages}}" wx:key="index">
-            <view class="stage-block stage-{{item}}"></view>
+        <view class="stage-track">
+          <block wx:for="{{stagesData.stages}}" wx:key="index">
+            <view class="stage-block s{{item}}"></view>
           </block>
         </view>
         <view class="stage-labels">
-          <block wx:for="{{labels}}" wx:key="index">
-            <view class="stage-label-col">
+          <block wx:for="{{stagesData.labels}}" wx:key="index">
+            <view class="stage-label-slot">
               <text wx:if="{{index % 12 === 0}}" class="stage-label-text">{{item}}</text>
             </view>
           </block>
@@ -75,93 +86,56 @@
       </scroll-view>
     </view>
 
-    <view class="ratio-card">
-      <text class="ratio-title">各阶段占比</text>
-      <view class="ratio-bar">
-        <view class="ratio-seg awake-seg" style="flex: {{awakeCount}}"></view>
-        <view class="ratio-seg light-seg" style="flex: {{lightCount}}"></view>
-        <view class="ratio-seg deep-seg" style="flex: {{deepCount}}"></view>
-        <view class="ratio-seg rem-seg" style="flex: {{remCount}}"></view>
+    <!-- Y轴柱状图 -->
+    <view class="bar-card">
+      <text class="section-title">分期柱状图</text>
+
+      <view class="chart-legend">
+        <view class="legend-item"><view class="ldot ldot-awake"></view>清醒</view>
+        <view class="legend-item"><view class="ldot ldot-light"></view>浅睡</view>
+        <view class="legend-item"><view class="ldot ldot-deep"></view>深睡</view>
+        <view class="legend-item"><view class="ldot ldot-rem"></view>REM</view>
       </view>
-      <view class="ratio-texts">
+
+      <view class="bar-body">
+        <view class="y-axis">
+          <text>REM</text><text>深睡</text><text>浅睡</text><text>清醒</text>
+        </view>
+        <scroll-view scroll-x class="bar-scroll">
+          <view class="bar-row">
+            <block wx:for="{{stagesData.stages}}" wx:key="index">
+              <view class="bar-col">
+                <view class="bar b{{item}}" style="height: {{item == 0 ? 28 : item == 1 ? 62 : item == 2 ? 120 : 94}}rpx;"></view>
+              </view>
+            </block>
+          </view>
+          <view class="bar-labels">
+            <block wx:for="{{stagesData.labels}}" wx:key="index">
+              <view class="bar-label-col">
+                <text wx:if="{{index % 6 === 0}}" class="bar-label-text">{{item}}</text>
+              </view>
+            </block>
+          </view>
+        </scroll-view>
+      </view>
+    </view>
+
+    <!-- 占比 -->
+    <view class="ratio-card">
+      <text class="section-title">阶段占比</text>
+      <view class="ratio-bar">
+        <view class="ratio-seg r-awake" style="flex: {{awakeCount}}"></view>
+        <view class="ratio-seg r-light" style="flex: {{lightCount}}"></view>
+        <view class="ratio-seg r-deep" style="flex: {{deepCount}}"></view>
+        <view class="ratio-seg r-rem" style="flex: {{remCount}}"></view>
+      </view>
+      <view class="ratio-labels">
         <text>清醒 {{awakePercent}}%</text>
         <text>浅睡 {{lightPercent}}%</text>
         <text>深睡 {{deepPercent}}%</text>
         <text>REM {{remPercent}}%</text>
       </view>
     </view>
+
   </block>
-</view>
-
-<!-- ==================================================== -->
-<!-- 自定义弹窗日历 -->
-<!-- ==================================================== -->
-<view wx:if="{{showCalendar}}" class="calendar-mask" bindtap="onHideCalendar">
-  <view class="calendar-popup" catchtap="noop">
-    <!-- 头部：年月 + 左右箭头 -->
-    <view class="cal-header">
-      <view class="cal-nav" bindtap="onCalPrev">◀</view>
-      <view class="cal-title-box" bindtap="onCalToggleView">
-        <text class="cal-title">{{calTitle}}</text>
-        <text class="cal-title-arrow">▼</text>
-      </view>
-      <view class="cal-nav" bindtap="onCalNext">▶</view>
-    </view>
-
-    <!-- ======== 日视图 ======== -->
-    <block wx:if="{{calView === 'days'}}">
-      <view class="cal-weekdays">
-        <text class="cal-wd">日</text><text class="cal-wd">一</text><text class="cal-wd">二</text>
-        <text class="cal-wd">三</text><text class="cal-wd">四</text><text class="cal-wd">五</text>
-        <text class="cal-wd">六</text>
-      </view>
-      <view class="cal-grid cal-day-grid">
-        <block wx:for="{{calDays}}" wx:key="index">
-          <view
-            class="cal-cell {{item.isEmpty ? 'cal-empty' : ''}} {{item.isToday ? 'cal-today' : ''}} {{item.isSelected ? 'cal-selected' : ''}} {{item.isFuture ? 'cal-future' : ''}}"
-            bindtap="onCalSelectDay"
-            data-date="{{item.dateStr}}"
-          >
-            <text>{{item.day}}</text>
-          </view>
-        </block>
-      </view>
-    </block>
-
-    <!-- ======== 月视图 ======== -->
-    <block wx:elif="{{calView === 'months'}}">
-      <view class="cal-grid cal-month-grid">
-        <block wx:for="{{calMonths}}" wx:key="index">
-          <view
-            class="cal-cell cal-month-cell {{item.isCurrent ? 'cal-selected' : ''}}"
-            bindtap="onCalSelectMonth"
-            data-month="{{item.month}}"
-          >
-            <text>{{item.label}}</text>
-          </view>
-        </block>
-      </view>
-    </block>
-
-    <!-- ======== 年视图 ======== -->
-    <block wx:else>
-      <view class="cal-grid cal-year-grid">
-        <block wx:for="{{calYears}}" wx:key="index">
-          <view
-            class="cal-cell cal-year-cell {{item.isCurrent ? 'cal-selected' : ''}}"
-            bindtap="onCalSelectYear"
-            data-year="{{item.year}}"
-          >
-            <text>{{item.year}}</text>
-          </view>
-        </block>
-      </view>
-    </block>
-
-    <!-- 底部按钮 -->
-    <view class="cal-footer">
-      <view class="cal-btn cal-btn-cancel" bindtap="onHideCalendar">取消</view>
-      <view class="cal-btn cal-btn-today" bindtap="onCalGoYesterday">回到昨天</view>
-    </view>
-  </view>
 </view>
