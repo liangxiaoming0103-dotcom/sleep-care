@@ -53,5 +53,10 @@ Page({
   onPullDownRefresh() {
     this.loadReport();
     wx.stopPullDownRefresh();
+  },
+
+  /** 跳转到睡眠分期详细页 */
+  goToReport() {
+    wx.navigateTo({ url: '/pages/report/report' });
   }
 });

@@ -2,7 +2,8 @@
   "pages": [
     "pages/login/login",
     "pages/home/home",
-    "pages/devices/devices"
+    "pages/devices/devices",
+    "pages/report/report"
   ],
   "window": {
     "navigationBarTitleText": "智能睡眠管理",

@@ -92,6 +92,9 @@
         <view class="legend-item"><view class="legend-dot light-dot"></view><text>浅睡 {{sleepData.light_sleep_minutes}}min</text></view>
         <view class="legend-item"><view class="legend-dot awake-dot"></view><text>清醒 {{sleepData.awake_minutes}}min</text></view>
       </view>
+
+      <!-- 查看详细分期按钮 -->
+      <button class="go-report-btn" bindtap="goToReport">查看详细分期</button>
     </view>
   </view>
 </view>

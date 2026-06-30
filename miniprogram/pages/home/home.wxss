@@ -259,3 +259,18 @@
 .rem-dot   { background: #a78bfa; }
 .light-dot { background: #c7d2fe; }
 .awake-dot { background: #fde68a; }
+
+/* =====================================================
+   查看详细分期按钮
+   ===================================================== */
+.go-report-btn {
+  margin-top: 28rpx;
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: #ffffff;
+  font-size: 28rpx;
+  font-weight: 600;
+  border-radius: 20rpx;
+  border: none;
+  padding: 20rpx 0;
+  box-shadow: 0 8rpx 24rpx rgba(79, 70, 229, 0.3);
+}
