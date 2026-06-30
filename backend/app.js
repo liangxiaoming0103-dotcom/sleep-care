@@ -953,4 +953,64 @@ async function start() {
   }
 }
 
+// =====================================================
+// 作息设置 GET/PUT /api/setting/plan
+// =====================================================
+
+// 获取设置
+app.get('/api/setting/plan', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
+  const db = await getDb();
+
+  let row = dbGetOne(db,
+    'SELECT * FROM user_settings WHERE user_id = ?',
+    [userId]
+  );
+
+  // 不存在则创建默认设置
+  if (!row) {
+    db.run(
+      'INSERT INTO user_settings (user_id) VALUES (?)',
+      [userId]
+    );
+    saveDb();
+    row = dbGetOne(db,
+      'SELECT * FROM user_settings WHERE user_id = ?',
+      [userId]
+    );
+  }
+
+  res.json({
+    code: 0,
+    message: 'success',
+    data: {
+      bed_time: row.bedtime || '23:00',
+      wake_time: row.wakeup_time || '07:00',
+      sunrise_duration_minutes: row.sunrise_duration || 10
+    }
+  });
+});
+
+// 更新设置
+app.put('/api/setting/plan', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
+  const { bed_time, wake_time, sunrise_duration_minutes } = req.body;
+  const db = await getDb();
+
+  // 确保记录存在
+  const exists = dbGetOne(db, 'SELECT user_id FROM user_settings WHERE user_id = ?', [userId]);
+  if (!exists) {
+    db.run('INSERT INTO user_settings (user_id) VALUES (?)', [userId]);
+  }
+
+  db.run(
+    'UPDATE user_settings SET bedtime = ?, wakeup_time = ?, sunrise_duration = ? WHERE user_id = ?',
+    [bed_time || '23:00', wake_time || '07:00', sunrise_duration_minutes || 10, userId]
+  );
+  saveDb();
+
+  res.json({ code: 0, message: '保存成功', data: null });
+});
+
+// 启动服务
 start();

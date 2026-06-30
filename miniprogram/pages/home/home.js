@@ -58,5 +58,10 @@ Page({
   /** 跳转到睡眠分期详细页 */
   goToReport() {
     wx.navigateTo({ url: '/pages/report/report' });
+  },
+
+  /** 跳转到作息设置页 */
+  goToSettings() {
+    wx.navigateTo({ url: '/pages/settings/settings' });
   }
 });

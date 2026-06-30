@@ -1,0 +1,44 @@
+<!--pages/settings/settings.wxml-->
+<!-- 作息设置页 -->
+
+<view class="page-container">
+  <!-- 加载 -->
+  <view wx:if="{{loading}}" class="loading-box">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <!-- 设置表单 -->
+  <view wx:else class="form-scroll">
+
+    <view class="setting-item">
+      <text class="label">就寝时间</text>
+      <picker mode="time" value="{{bedTime}}" bindchange="onBedTimeChange">
+        <view class="picker-value">{{bedTime || '请选择'}}</view>
+      </picker>
+    </view>
+
+    <view class="setting-item">
+      <text class="label">起床时间</text>
+      <picker mode="time" value="{{wakeTime}}" bindchange="onWakeTimeChange">
+        <view class="picker-value">{{wakeTime || '请选择'}}</view>
+      </picker>
+    </view>
+
+    <view class="setting-item setting-item-col">
+      <view class="slider-header">
+        <text class="label">日出模拟时长</text>
+        <text class="slider-value">{{sunriseDuration}} 分钟</text>
+      </view>
+      <view class="slider-body">
+        <text class="slider-min">5</text>
+        <slider min="5" max="30" value="{{sunriseDuration}}" bindchange="onSunriseChange" activeColor="#4A90D9" backgroundColor="#e2e8f0" block-size="22" />
+        <text class="slider-max">30</text>
+      </view>
+    </view>
+
+    <!-- 保存按钮 -->
+    <button class="save-btn" type="primary" bindtap="saveSettings">保存</button>
+
+  </view>
+</view>

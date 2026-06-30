@@ -281,21 +281,33 @@
 
 /* 柱状图区 */
 .trend-row {
-  height: 260rpx;
+  height: 200rpx;
   align-items: flex-end;
-  gap: 20rpx;
-  padding: 0 4rpx;
+  gap: 24rpx;
+  padding: 0 6rpx;
   position: relative;
 }
 
+/* 均分参考线 */
 .trend-avg-line {
   position: absolute;
-  left: 0; right: 0;
-  height: 2rpx;
-  background: #e74c3c;
+  left: -8rpx; right: -8rpx;
+  height: 1px;
+  background: #f87171;
   z-index: 2;
   pointer-events: none;
-  opacity: 0.6;
+  opacity: 0.4;
+}
+
+.trend-avg-label {
+  position: absolute;
+  right: 6rpx;
+  top: -15rpx;
+  font-size: 18rpx;
+  color: #f87171;
+  font-weight: 500;
+  background: #fff;
+  padding: 0 6rpx;
 }
 
 .trend-col {
@@ -303,46 +315,33 @@
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  width: 88rpx;
-  height: 260rpx;
+  width: 80rpx;
+  height: 200rpx;
 }
 
 .trend-value {
-  font-size: 24rpx;
+  font-size: 22rpx;
   font-weight: 600;
   color: #475569;
-  margin-bottom: 8rpx;
+  margin-bottom: 6rpx;
 }
 
 .trend-bar {
-  width: 48rpx;
-  border-radius: 8rpx 8rpx 3rpx 3rpx;
-  min-height: 6rpx;
+  width: 40rpx;
+  border-radius: 6rpx 6rpx 2rpx 2rpx;
+  min-height: 4rpx;
+  background: #a5b4fc;
 }
 
-/* 单色系 */
-.trend-great { background: #4f46e5; }
-.trend-good  { background: #6366f1; }
-.trend-mid   { background: #818cf8; }
-.trend-low   { background: #c7d2fe; }
-
-/* X轴标签 */
 .trend-label-col {
-  width: 120rpx;
+  width: 104rpx;
   text-align: center;
 }
 
 .bar-label-text {
-  font-size: 24rpx;
-  color: #475569;
+  font-size: 22rpx;
+  color: #64748b;
   font-weight: 500;
-}
-
-/* 均分参考线 */
-/* Y轴四档 */
-.y-axis-4 {
-  justify-content: space-between;
-  padding-bottom: 36rpx;
 }
 
 /* =====================================================

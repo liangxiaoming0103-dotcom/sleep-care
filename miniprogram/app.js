@@ -15,7 +15,8 @@ App({
   },
   globalData: {
     userInfo: null,
-    token: null
+    token: null,
+    apiBase: 'http://127.0.0.1:3000'
   },
 
   /**

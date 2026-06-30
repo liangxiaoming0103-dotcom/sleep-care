@@ -230,18 +230,19 @@
           <view class="trend-avg-tag">均分 <text>{{trendAvg}}</text></view>
         </view>
         <view class="bar-body">
-          <view class="y-axis y-axis-4">
-            <text>100</text><text>75</text><text>50</text><text>25</text>
+          <view class="y-axis">
+            <text>100</text><text>85</text><text>70</text><text>55</text><text>40</text>
           </view>
           <scroll-view scroll-x class="bar-scroll">
             <view class="bar-row trend-row">
+              <!-- 均分参考线 -->
+              <view class="trend-avg-line" style="bottom: {{(trendAvg - 40) / 60 * 200}}rpx;">
+                <text class="trend-avg-label">平均 {{trendAvg}}</text>
+              </view>
               <block wx:for="{{trendScores}}" wx:key="index">
                 <view class="trend-col">
                   <text class="trend-value">{{item}}</text>
-                  <view
-                    class="trend-bar trend-{{item < 60 ? 'low' : item < 75 ? 'mid' : item < 90 ? 'good' : 'great'}}"
-                    style="height: {{item * 2.4}}rpx;"
-                  ></view>
+                  <view class="trend-bar" style="height: {{(item - 40) / 60 * 200}}rpx;"></view>
                 </view>
               </block>
             </view>

@@ -274,3 +274,17 @@
   padding: 20rpx 0;
   box-shadow: 0 8rpx 24rpx rgba(79, 70, 229, 0.3);
 }
+
+.settings-entry {
+  margin-top: 28rpx;
+}
+
+.settings-entry button {
+  background: #ffffff;
+  color: #6366f1;
+  font-size: 28rpx;
+  font-weight: 600;
+  border-radius: 20rpx;
+  border: 2rpx solid #e0e7ff;
+  padding: 18rpx 0;
+}
