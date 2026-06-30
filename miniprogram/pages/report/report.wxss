@@ -185,3 +185,72 @@
   display: flex; justify-content: space-between;
   font-size: 24rpx; color: #64748b;
 }
+
+/* =====================================================
+   噪音曲线
+   ===================================================== */
+.noise-card {
+  margin-top: 32rpx;
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 16rpx 24rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+}
+
+.noise-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #1a2c3e;
+  display: block;
+  margin-bottom: 10rpx;
+}
+
+.noise-subtitle {
+  display: block;
+  font-size: 22rpx;
+  color: #94a3b8;
+  margin-bottom: 20rpx;
+}
+
+.noise-body {
+  display: flex;
+  background: #f8fafc;
+  border-radius: 16rpx;
+  padding: 20rpx 12rpx 8rpx 8rpx;
+}
+
+.y-axis-db {
+  width: 60rpx;
+}
+
+/* 噪音柱状密集图（144 根细柱模拟曲线） */
+.noise-row {
+  display: flex;
+  align-items: flex-end;
+  height: 180rpx;
+  gap: 1rpx;
+}
+
+.noise-bar {
+  flex-shrink: 0;
+  width: 4rpx;
+  min-height: 2rpx;
+  background: #6366f1;
+  border-radius: 2rpx 2rpx 0 0;
+  opacity: 0.7;
+}
+
+.noise-labels {
+  display: flex;
+  margin-top: 10rpx;
+}
+
+.noise-label-col {
+  flex-shrink: 0;
+  width: 5rpx;
+}
+
+.noise-label-text {
+  font-size: 18rpx;
+  color: #94a3b8;
+}

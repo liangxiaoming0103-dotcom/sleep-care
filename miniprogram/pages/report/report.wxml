@@ -137,5 +137,31 @@
       </view>
     </view>
 
+    <!-- 环境噪音曲线 -->
+    <view class="noise-card">
+      <text class="noise-title">环境噪音</text>
+      <text class="noise-subtitle">24 小时 · 每 10 分钟一个采样点 · 共 144 个</text>
+
+      <view class="noise-body">
+        <view class="y-axis y-axis-db">
+          <text>65dB</text><text>50dB</text><text>35dB</text><text>20dB</text>
+        </view>
+        <scroll-view scroll-x class="bar-scroll">
+          <view class="noise-row">
+            <block wx:for="{{noiseData.noise}}" wx:key="index">
+              <view class="noise-bar" style="height: {{(item - 20) / 45 * 100}}%;"></view>
+            </block>
+          </view>
+          <view class="noise-labels">
+            <block wx:for="{{noiseData.labels}}" wx:key="index">
+              <view class="noise-label-col">
+                <text wx:if="{{index % 24 === 0}}" class="noise-label-text">{{item}}</text>
+              </view>
+            </block>
+          </view>
+        </scroll-view>
+      </view>
+    </view>
+
   </block>
 </view>
