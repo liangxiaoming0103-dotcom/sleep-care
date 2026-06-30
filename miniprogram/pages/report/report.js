@@ -75,9 +75,8 @@ Page({
     this.setData({ loading: true });
 
     wx.request({
-      url: `${BASE_URL}/api/sleep/stages`,
+      url: `${BASE_URL}/api/sleep/stages?date=${selectedDate}`,
       method: 'GET',
-      data: { date: selectedDate },
       header: { 'Authorization': `Bearer ${token}` },
       success: (res) => {
         if (res.data.code === 0) {
@@ -88,7 +87,7 @@ Page({
           if (res.data.code === 401 || res.data.code === 403) wx.redirectTo({ url: '/pages/login/login' });
         }
       },
-      fail: () => { wx.showToast({ title: '分期数据加载失败', icon: 'none' }); this.setData({ loading: false }); }
+      fail: () => { wx.showToast({ title: '加载分期数据失败', icon: 'none' }); this.setData({ loading: false }); }
     });
   },
 
@@ -97,22 +96,31 @@ Page({
      ================================================================ */
   loadNoise() {
     const token = getApp().getToken();
-    if (!token) return;
-    const { selectedDate } = this.data;
+    if (!token) {
+      wx.redirectTo({ url: '/pages/login/login' });
+      return;
+    }
 
     wx.request({
-      url: `${BASE_URL}/api/sleep/noise`,
+      url: `${BASE_URL}/api/sleep/noise?date=${this.data.selectedDate}`,
       method: 'GET',
-      data: { date: selectedDate },
       header: { 'Authorization': `Bearer ${token}` },
       success: (res) => {
         if (res.data.code === 0) {
-          this.setData({ noiseData: res.data.data });
+          this.setData({ noiseData: res.data.data, loading: false });
+          this.updateNoiseChart();
         } else {
-          this.setData({ noiseData: null });
+          wx.showToast({ title: '加载噪音数据失败', icon: 'none' });
+          this.setData({ loading: false });
+          if (res.data.code === 401 || res.data.code === 403) {
+            wx.redirectTo({ url: '/pages/login/login' });
+          }
         }
       },
-      fail: () => { wx.showToast({ title: '噪音数据加载失败', icon: 'none' }); }
+      fail: () => {
+        wx.showToast({ title: '网络请求失败', icon: 'none' });
+        this.setData({ loading: false });
+      }
     });
   },
 
@@ -121,9 +129,15 @@ Page({
     const echarts = require('../../components/ec-canvas/echarts');
     const chart = echarts.init(canvas, null, { width, height, devicePixelRatio: dpr });
     this.noiseChart = chart;
+    this.updateNoiseChart();
+    return chart;
+  },
 
+  /** 更新噪音图表数据 */
+  updateNoiseChart() {
+    if (!this.noiseChart) return;
     const data = this.data.noiseData;
-    if (!data) return chart;
+    if (!data) return;
 
     const option = {
       tooltip: {
@@ -145,7 +159,7 @@ Page({
         data: data.labels,
         axisLabel: {
           fontSize: 10,
-          interval: 11    // 每2小时显示一个标签
+          interval: 11
         }
       },
       yAxis: {
@@ -180,8 +194,7 @@ Page({
       }]
     };
 
-    chart.setOption(option);
-    return chart;
+    this.noiseChart.setOption(option);
   },
 
   /* ================================================================

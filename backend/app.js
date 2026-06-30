@@ -806,6 +806,156 @@ app.get('/api/sleep/noise', authenticateToken, async (req, res) => {
 });
 
 // =====================================================
+// 睡眠评分汇总 GET /api/sleep/summary
+// =====================================================
+
+/**
+ * 获取或创建某一天的睡眠评分
+ * 若 sleep_reports 中已有记录则直接返回 sleep_score；
+ * 否则生成完整基础指标 + 空 JSON 字段并 INSERT，返回新评分。
+ */
+async function getOrCreateDailyScore(userId, deviceId, dateStr) {
+  const db = await getDb();
+
+  // 查询已有记录
+  let row = dbGetOne(db,
+    'SELECT sleep_score FROM sleep_reports WHERE user_id=? AND device_id=? AND report_date=?',
+    [userId, deviceId, dateStr]
+  );
+  if (row) return row.sleep_score;
+
+  // 不存在 → 生成基础指标
+  const seedKey = `${userId}_${deviceId}_${dateStr}`;
+  const rand = seededRandom(seedKey);
+  const total = Math.floor(300 + rand() * 180);
+  const deepR = 0.15 + rand() * 0.20;
+  const remR = 0.20 + rand() * 0.05;
+  const deep = Math.floor(total * deepR);
+  const rem = Math.floor(total * remR);
+  const light = total - deep - rem;
+  const score = Math.floor(60 + rand() * 40);
+  const awake = Math.floor(rand() * 6);
+  const awakeMin = Math.floor(rand() * 30);
+
+  try {
+    db.run(
+      `INSERT INTO sleep_reports
+        (user_id, device_id, report_date, sleep_score, total_sleep_minutes,
+         deep_sleep_minutes, light_sleep_minutes, rem_sleep_minutes,
+         awake_minutes, awake_count, heart_rate_json, sleep_stages_json, noise_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [userId, deviceId, dateStr, score, total,
+       deep, light, rem,
+       awakeMin, awake, '[]', '[]', '[]']
+    );
+    saveDb();
+    return score;
+  } catch (err) {
+    // 并发插入 → 重新查询
+    row = dbGetOne(db,
+      'SELECT sleep_score FROM sleep_reports WHERE user_id=? AND device_id=? AND report_date=?',
+      [userId, deviceId, dateStr]
+    );
+    if (row) return row.sleep_score;
+    return null;
+  }
+}
+
+app.get('/api/sleep/summary', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const period = req.query.period || 'day';
+    const db = await getDb();
+
+    // 解析基准日期，默认昨天
+    let baseDate;
+    if (req.query.date && /^\d{4}-\d{2}-\d{2}$/.test(req.query.date)) {
+      baseDate = new Date(req.query.date);
+    } else {
+      baseDate = new Date();
+      baseDate.setDate(baseDate.getDate() - 1);
+    }
+
+    // 获取用户首台设备
+    let deviceId = 0;
+    const deviceRow = dbGetOne(db, 'SELECT id FROM devices WHERE user_id=? LIMIT 1', [userId]);
+    if (deviceRow) deviceId = deviceRow.id;
+
+    const labels = [];
+    const scores = [];
+    let sum = 0, count = 0;
+
+    if (period === 'day') {
+      // 基准日往前推 6 天，共 7 天
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(baseDate);
+        d.setDate(d.getDate() - i);
+        const ds = d.toISOString().split('T')[0];
+        labels.push(ds);
+        const s = await getOrCreateDailyScore(userId, deviceId, ds);
+        scores.push(s);
+        if (s !== null) { sum += s; count++; }
+      }
+    } else if (period === 'week') {
+      // 基准日所在周的周日往前推 5 周，共 6 周
+      const dayOfWeek = baseDate.getDay(); // 0=周日
+      const sunday = new Date(baseDate);
+      sunday.setDate(sunday.getDate() - dayOfWeek); // 回到本周日
+
+      for (let i = 5; i >= 0; i--) {
+        const weekStart = new Date(sunday);
+        weekStart.setDate(weekStart.getDate() - i * 7);
+        let weekSum = 0, weekCount = 0;
+        for (let j = 0; j < 7; j++) {
+          const d = new Date(weekStart);
+          d.setDate(d.getDate() + j);
+          const ds = d.toISOString().split('T')[0];
+          const s = await getOrCreateDailyScore(userId, deviceId, ds);
+          if (s !== null) { weekSum += s; weekCount++; }
+        }
+        const avg = weekCount > 0 ? Math.round(weekSum / weekCount * 10) / 10 : 0;
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 6);
+        labels.push(`${weekStart.toISOString().split('T')[0]} ~ ${weekEnd.toISOString().split('T')[0]}`);
+        scores.push(avg);
+        sum += avg; count++;
+      }
+    } else if (period === 'month') {
+      // 基准日所在月往前推 5 个月，共 6 个月
+      for (let i = 5; i >= 0; i--) {
+        const y = baseDate.getFullYear();
+        const m = baseDate.getMonth() - i;
+        const firstDay = new Date(y, m, 1);
+        const lastDay = new Date(y, m + 1, 0);
+        let monthSum = 0, monthCount = 0;
+        for (let d = 1; d <= lastDay.getDate(); d++) {
+          const ds = `${firstDay.getFullYear()}-${String(firstDay.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+          const s = await getOrCreateDailyScore(userId, deviceId, ds);
+          if (s !== null) { monthSum += s; monthCount++; }
+        }
+        const avg = monthCount > 0 ? Math.round(monthSum / monthCount * 10) / 10 : 0;
+        labels.push(`${firstDay.getFullYear()}-${String(firstDay.getMonth()+1).padStart(2,'0')}`);
+        scores.push(avg);
+        sum += avg; count++;
+      }
+    } else {
+      return res.json({ code: 1001, message: 'period 参数无效，可选 day/week/month', data: null });
+    }
+
+    const avgScore = count > 0 ? Math.round(sum / count * 10) / 10 : 0;
+
+    res.json({
+      code: 0,
+      message: 'success',
+      data: { period, labels, scores, avg_score: avgScore }
+    });
+  } catch (err) {
+    console.error('[睡眠评分汇总] 服务器错误：', err);
+    res.status(500).json({ code: 5001, message: '服务器内部错误', data: null });
+  }
+});
+
+// =====================================================
 // 异步启动服务
 // =====================================================
 async function start() {
