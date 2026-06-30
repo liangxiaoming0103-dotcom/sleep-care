@@ -675,6 +675,137 @@ app.get('/api/sleep/stages', authenticateToken, async (req, res) => {
 });
 
 // =====================================================
+// 获取噪音数据 GET /api/sleep/noise
+// =====================================================
+app.get('/api/sleep/noise', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
+  let dateStr = req.query.date;
+  if (!dateStr) {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    dateStr = yesterday.toISOString().split('T')[0];
+  }
+  const db = await getDb();
+  let deviceId = 0;
+  const deviceRow = dbGetOne(db, 'SELECT id FROM devices WHERE user_id = ? LIMIT 1', [userId]);
+  if (deviceRow) deviceId = deviceRow.id;
+
+  // 1. 查询记录
+  let report = dbGetOne(
+    db,
+    'SELECT * FROM sleep_reports WHERE user_id = ? AND device_id = ? AND report_date = ?',
+    [userId, deviceId, dateStr]
+  );
+
+  // 2. 若不存在，生成基础指标并插入（复用第4节逻辑）
+  if (!report) {
+    const seedKey = `${userId}_${deviceId}_${dateStr}`;
+    const rand = seededRandom(seedKey);
+    const total = Math.floor(300 + rand() * 180);
+    const deepR = 0.15 + rand() * 0.20;
+    const remR = 0.20 + rand() * 0.05;
+    const deep = Math.floor(total * deepR);
+    const rem = Math.floor(total * remR);
+    const light = total - deep - rem;
+    const score = Math.floor(60 + rand() * 40);
+    const awake = Math.floor(rand() * 6);
+    const awakeMin = Math.floor(rand() * 30);
+    try {
+      db.run(
+        `INSERT INTO sleep_reports
+          (user_id, device_id, report_date, sleep_score, total_sleep_minutes,
+           deep_sleep_minutes, light_sleep_minutes, rem_sleep_minutes,
+           awake_minutes, awake_count, heart_rate_json, sleep_stages_json, noise_json)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [userId, deviceId, dateStr, score, total,
+         deep, light, rem,
+         awakeMin, awake, '[]', '[]', '[]']
+      );
+      saveDb();
+      report = dbGetOne(
+        db,
+        'SELECT * FROM sleep_reports WHERE user_id = ? AND device_id = ? AND report_date = ?',
+        [userId, deviceId, dateStr]
+      );
+    } catch (err) {
+      report = dbGetOne(db,
+        'SELECT * FROM sleep_reports WHERE user_id=? AND device_id=? AND report_date=?',
+        [userId, deviceId, dateStr]);
+      if (!report) return res.json({ code: 1001, message: '生成报告失败' });
+    }
+  }
+
+  // 3. 检查 noise_json
+  let noise = [];
+  let labels = [];
+  if (report.noise_json) {
+    try {
+      const parsed = JSON.parse(report.noise_json);
+      if (Array.isArray(parsed) && parsed.length === 144) {
+        noise = parsed;
+        // 生成标签
+        for (let i = 0; i < 144; i++) {
+          const hour = i / 6;
+          const hours = String(Math.floor(hour)).padStart(2, '0');
+          const minutes = String(Math.floor((hour % 1) * 60)).padStart(2, '0');
+          labels.push(`${hours}:${minutes}`);
+        }
+        return res.json({ code: 0, message: 'success', data: { date: dateStr, noise, labels } });
+      }
+    } catch (e) { /* 忽略，重新生成 */ }
+  }
+
+  // 4. 生成噪音数据（确定性随机）
+  const seedKey = `${userId}_${deviceId}_${dateStr}`;
+  const rand = seededRandom(seedKey);
+  const TOTAL_POINTS = 144;
+  const newNoise = [];
+
+  for (let i = 0; i < TOTAL_POINTS; i++) {
+    const hour = i / 6;
+    const hourFloor = Math.floor(hour);
+    const isNight = (hourFloor >= 22 || hourFloor < 6);
+
+    let baseValue;
+    if (isNight) {
+      baseValue = 30 + rand() * 10;
+    } else {
+      baseValue = 45 + rand() * 20;
+    }
+
+    // 平滑过渡
+    if (hourFloor === 6) {
+      const progress = (hour - 6) / 1;
+      const nightValue = 30 + rand() * 10;
+      const dayValue = 45 + rand() * 20;
+      baseValue = nightValue + (dayValue - nightValue) * progress;
+    }
+    if (hourFloor === 21) {
+      const progress = (hour - 21) / 1;
+      const dayValue = 45 + rand() * 20;
+      const nightValue = 30 + rand() * 10;
+      baseValue = dayValue + (nightValue - dayValue) * progress;
+    }
+
+    newNoise.push(parseFloat(baseValue.toFixed(1)));
+  }
+
+  // 5. 更新数据库
+  db.run('UPDATE sleep_reports SET noise_json = ? WHERE id = ?', [JSON.stringify(newNoise), report.id]);
+  saveDb();
+
+  // 6. 生成标签
+  for (let i = 0; i < TOTAL_POINTS; i++) {
+    const hour = i / 6;
+    const hours = String(Math.floor(hour)).padStart(2, '0');
+    const minutes = String(Math.floor((hour % 1) * 60)).padStart(2, '0');
+    labels.push(`${hours}:${minutes}`);
+  }
+
+  res.json({ code: 0, message: 'success', data: { date: dateStr, noise: newNoise, labels } });
+});
+
+// =====================================================
 // 异步启动服务
 // =====================================================
 async function start() {
