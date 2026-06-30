@@ -15,11 +15,10 @@ Page({
    * 生命周期函数--监听页面加载
    * 检查本地是否已有 Token，有则免登录直接跳转设备页
    */
-  onLoad(options) {
-    const token = wx.getStorageSync('token');
+  onLoad() {
+    const token = getApp().getToken();
     if (token) {
-      // 已有登录凭证，直接跳转设备页
-      wx.navigateTo({ url: '/pages/home/home' });
+      wx.switchTab({ url: '/pages/home/home' });
     }
   },
 
@@ -71,7 +70,7 @@ Page({
           wx.showToast({ title: '登录成功', icon: 'success' });
 
           // 跳转到设备管理页
-          wx.navigateTo({ url: '/pages/home/home' });
+          wx.switchTab({ url: '/pages/home/home' });
         } else {
           // 服务端返回的业务错误（密码错误、用户不存在等）
           wx.showToast({ title: res.data.message, icon: 'none' });

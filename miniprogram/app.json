@@ -8,5 +8,29 @@
   "window": {
     "navigationBarTitleText": "智能睡眠管理",
     "navigationBarBackgroundColor": "#ffffff"
+  },
+  "tabBar": {
+    "color": "#999999",
+    "selectedColor": "#4A90D9",
+    "list": [
+      {
+        "pagePath": "pages/home/home",
+        "text": "首页",
+        "iconPath": "images/home.png",
+        "selectedIconPath": "images/home_active.png"
+      },
+      {
+        "pagePath": "pages/devices/devices",
+        "text": "设备",
+        "iconPath": "images/device.png",
+        "selectedIconPath": "images/device_active.png"
+      },
+      {
+        "pagePath": "pages/report/report",
+        "text": "报告",
+        "iconPath": "images/report.png",
+        "selectedIconPath": "images/report_active.png"
+      }
+    ]
   }
 }
