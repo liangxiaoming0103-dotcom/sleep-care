@@ -15,6 +15,15 @@ const JWT_SECRET = 'sleep-care-secret-key-2026';
 // 加载 .env 环境变量（若存在）
 dotenv.config();
 
+// =====================================================
+// 角色映射：INTEGER ↔ TEXT
+// DB 中 role 为 INTEGER（0/1/2），API/JWT 中使用 TEXT（patient/doctor/admin）
+// =====================================================
+const ROLE_MAP = {
+  intToText: { 0: 'patient', 1: 'doctor', 2: 'admin' },
+  textToInt: { 'patient': 0, 'doctor': 1, 'admin': 2 }
+};
+
 const { getDb, saveDb } = require('./db/connection');
 const { initDatabase } = require('./db/init');
 
@@ -131,7 +140,7 @@ app.get('/', (req, res) => {
 // =====================================================
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { phone, password, nickname } = req.body;
+    const { phone, password, nickname, role } = req.body;
 
     // ---- 参数验证 ----
     if (!phone || !password) {
@@ -142,6 +151,18 @@ app.post('/api/auth/register', async (req, res) => {
     }
     if (password.length < 6) {
       return res.json({ code: 1001, message: '密码长度不能少于6位', data: null });
+    }
+
+    // ---- 角色参数转换：支持 'patient'/'doctor'/'admin' 或 0/1/2，默认 patient ----
+    let roleInt = 0; // 默认普通用户
+    if (role !== undefined && role !== null) {
+      if (typeof role === 'number') {
+        roleInt = role; // 直接使用数字 0/1/2
+      } else if (typeof role === 'string' && ROLE_MAP.textToInt[role] !== undefined) {
+        roleInt = ROLE_MAP.textToInt[role]; // 文本 → 整数
+      } else {
+        return res.json({ code: 1001, message: '无效的角色类型', data: null });
+      }
     }
 
     // ---- 获取数据库连接 ----
@@ -161,8 +182,8 @@ app.post('/api/auth/register', async (req, res) => {
     const finalNickname = nickname || '用户';
 
     db.run(
-      'INSERT INTO users (phone, password_hash, nickname, role, status, created_at) VALUES (?, ?, ?, 0, 1, ?)',
-      [phone, passwordHash, finalNickname, now]
+      'INSERT INTO users (phone, password_hash, nickname, role, status, created_at) VALUES (?, ?, ?, ?, 1, ?)',
+      [phone, passwordHash, finalNickname, roleInt, now]
     );
 
     // ---- 持久化到磁盘 ----
@@ -174,6 +195,11 @@ app.post('/api/auth/register', async (req, res) => {
       'SELECT id, phone, nickname, role FROM users WHERE phone = ?',
       [phone]
     );
+
+    // ---- 将整数 role 转换为文本返回给前端 ----
+    if (newUser) {
+      newUser.role = ROLE_MAP.intToText[newUser.role] || 'patient';
+    }
 
     // ---- 返回成功响应 ----
     res.json({
@@ -228,9 +254,10 @@ app.post('/api/auth/login', async (req, res) => {
       return res.json({ code: 3001, message: '账号已被禁用', data: null });
     }
 
-    // ---- 7. 生成 JWT Token，payload 包含 id、phone、role，有效期 7 天 ----
+    // ---- 7. 生成 JWT Token，payload 包含 id、phone、role（文本形式），有效期 7 天 ----
+    const roleText = ROLE_MAP.intToText[user.role] || 'patient';
     const token = jwt.sign(
-      { id: user.id, phone: user.phone, role: user.role },
+      { id: user.id, phone: user.phone, role: roleText },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -251,7 +278,7 @@ app.post('/api/auth/login', async (req, res) => {
         id: user.id,
         phone: user.phone,
         nickname: user.nickname,
-        role: user.role
+        role: roleText
       }
     });
   } catch (err) {
@@ -1010,6 +1037,141 @@ app.put('/api/setting/plan', authenticateToken, async (req, res) => {
   saveDb();
 
   res.json({ code: 0, message: '保存成功', data: null });
+});
+
+// =====================================================
+// 医生授权接口（均需登录）
+// =====================================================
+
+/**
+ * 患者授权医生
+ * POST /api/doctor/grant
+ * @param {string} doctor_phone - 医生手机号
+ * @returns {{code: number, message: string, data: object|null}}
+ */
+app.post('/api/doctor/grant', authenticateToken, async (req, res) => {
+  const patientId = req.user.id;
+  const { doctor_phone } = req.body;
+
+  // ---- 1. 查找医生（DB 中 role 为 INTEGER：1=doctor） ----
+  const db = await getDb();
+  const doctor = dbGetOne(
+    db,
+    'SELECT id, nickname FROM users WHERE phone = ? AND role = 1',
+    [doctor_phone]
+  );
+  if (!doctor) {
+    return res.json({ code: 1001, message: '该手机号不是医生', data: null });
+  }
+
+  // ---- 2. 检查是否已授权（pending 或 active） ----
+  const existing = dbGetOne(
+    db,
+    'SELECT id FROM doctor_authorizations WHERE patient_id = ? AND doctor_id = ? AND status IN (\'pending\', \'active\')',
+    [patientId, doctor.id]
+  );
+  if (existing) {
+    return res.json({ code: 1001, message: '已授权该医生', data: null });
+  }
+
+  // ---- 3. 计算过期时间（30天后） ----
+  const expireDate = new Date();
+  expireDate.setDate(expireDate.getDate() + 30);
+  const expireStr = expireDate.toISOString().split('T')[0];
+
+  // ---- 4. 插入授权记录 ----
+  const now = new Date().toISOString();
+  db.run(
+    'INSERT INTO doctor_authorizations (patient_id, doctor_id, status, expire_date, requested_at, created_at, updated_at) VALUES (?, ?, \'pending\', ?, ?, ?, ?)',
+    [patientId, doctor.id, expireStr, now, now, now]
+  );
+  saveDb();
+
+  // ---- 5. 返回结果 ----
+  const newAuth = dbGetOne(
+    db,
+    'SELECT * FROM doctor_authorizations WHERE patient_id = ? AND doctor_id = ?',
+    [patientId, doctor.id]
+  );
+  return res.json({ code: 0, message: '授权成功', data: newAuth });
+});
+
+/**
+ * 患者撤销医生授权
+ * DELETE /api/doctor/revoke
+ * @param {number} doctor_id - 医生ID
+ * @returns {{code: number, message: string, data: null}}
+ */
+app.delete('/api/doctor/revoke', authenticateToken, async (req, res) => {
+  try {
+    const patientId = req.user.id;
+    const doctorId = parseInt(req.body.doctor_id, 10);
+
+    // ---- 1. 参数校验 ----
+    if (!doctorId || isNaN(doctorId)) {
+      return res.json({ code: 1001, message: '请指定医生', data: null });
+    }
+
+    const db = await getDb();
+
+    // ---- 2. 查询有效授权记录 ----
+    const auth = dbGetOne(
+      db,
+      `SELECT id FROM doctor_authorizations
+       WHERE patient_id = ? AND doctor_id = ? AND status IN ('pending', 'active')`,
+      [patientId, doctorId]
+    );
+
+    if (!auth) {
+      return res.json({ code: 2001, message: '未找到该授权', data: null });
+    }
+
+    // ---- 3. 更新状态为 revoked ----
+    const now = new Date().toISOString();
+    db.run(
+      'UPDATE doctor_authorizations SET status = ?, updated_at = ? WHERE id = ?',
+      ['revoked', now, auth.id]
+    );
+
+    // ---- 4. 持久化到磁盘 ----
+    saveDb();
+
+    res.json({ code: 0, message: '已撤销授权', data: null });
+  } catch (err) {
+    console.error('[撤销授权] 服务器错误：', err);
+    res.status(500).json({ code: 5001, message: '服务器内部错误', data: null });
+  }
+});
+
+/**
+ * 获取已授权的医生列表
+ * GET /api/doctor/granted
+ * @returns {{code: number, message: string, data: object[]}}
+ */
+app.get('/api/doctor/granted', authenticateToken, async (req, res) => {
+  try {
+    const patientId = req.user.id;
+    const db = await getDb();
+
+    // ---- 跨表查询：JOIN users 获取医生信息，过滤有效授权和过期时间 ----
+    const doctors = dbGetAll(
+      db,
+      `SELECT a.id, a.doctor_id, u.nickname as doctor_name, u.phone as doctor_phone,
+              a.status, a.expire_date, a.requested_at
+       FROM doctor_authorizations a
+       JOIN users u ON a.doctor_id = u.id
+       WHERE a.patient_id = ?
+         AND a.status IN ('pending', 'active')
+         AND a.expire_date >= date('now')
+       ORDER BY a.requested_at DESC`,
+      [patientId]
+    );
+
+    res.json({ code: 0, message: 'success', data: doctors });
+  } catch (err) {
+    console.error('[已授权列表] 服务器错误：', err);
+    res.status(500).json({ code: 5001, message: '服务器内部错误', data: null });
+  }
 });
 
 // 启动服务
