@@ -114,17 +114,19 @@ async function initSchema() {
   // =====================================================
   db.run(`
     CREATE TABLE IF NOT EXISTS doctor_authorizations (
-      id               INTEGER PRIMARY KEY AUTOINCREMENT,
-      patient_user_id  INTEGER NOT NULL,
-      doctor_user_id   INTEGER NOT NULL,
-      status           TEXT    NOT NULL DEFAULT 'pending'
-                        CHECK(status IN ('pending','active','expired','revoked')),
-      expire_at        TEXT    NOT NULL,
-      created_at       TEXT    NOT NULL DEFAULT (datetime('now','localtime')),
-      FOREIGN KEY (patient_user_id) REFERENCES users(id) ON DELETE CASCADE,
-      FOREIGN KEY (doctor_user_id)  REFERENCES users(id) ON DELETE CASCADE
-
-      );
+      id           INTEGER PRIMARY KEY AUTOINCREMENT,
+      patient_id   INTEGER NOT NULL,
+      doctor_id    INTEGER NOT NULL,
+      status       TEXT    NOT NULL DEFAULT 'pending',
+      expire_date  TEXT    NOT NULL,
+      doctor_note  TEXT,
+      requested_at TEXT    NOT NULL DEFAULT (datetime('now')),
+      responded_at TEXT,
+      created_at   TEXT    NOT NULL DEFAULT (datetime('now')),
+      updated_at   TEXT    NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (patient_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (doctor_id)  REFERENCES users(id) ON DELETE CASCADE
+    );
   `);
   console.log('[Schema] ✓ doctor_authorizations 表');
 
@@ -134,8 +136,8 @@ async function initSchema() {
   db.run('CREATE INDEX IF NOT EXISTS idx_devices_user_id    ON devices(user_id);');
   db.run('CREATE INDEX IF NOT EXISTS idx_reports_user_date   ON sleep_reports(user_id, report_date);');
   db.run('CREATE INDEX IF NOT EXISTS idx_reports_device_id   ON sleep_reports(device_id);');
-  db.run('CREATE INDEX IF NOT EXISTS idx_auth_patient        ON doctor_authorizations(patient_user_id);');
-  db.run('CREATE INDEX IF NOT EXISTS idx_auth_doctor         ON doctor_authorizations(doctor_user_id);');
+  db.run('CREATE INDEX IF NOT EXISTS idx_auth_patient        ON doctor_authorizations(patient_id);');
+  db.run('CREATE INDEX IF NOT EXISTS idx_auth_doctor         ON doctor_authorizations(doctor_id);');
   db.run('CREATE INDEX IF NOT EXISTS idx_auth_status         ON doctor_authorizations(status);');
   console.log('[Schema] ✓ 6 个索引');
 
