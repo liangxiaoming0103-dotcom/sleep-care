@@ -1,46 +1,46 @@
 <!-- pages/doctors/doctors.wxml — 医生授权页面 -->
 <view class="container">
-  <!-- 授权区域 -->
-  <view class="grant-section">
-    <view class="section-title">添加医生授权</view>
-    <view class="grant-form">
-      <input
-        class="phone-input"
-        type="text"
-        placeholder="请输入医生手机号"
-        value="{{doctorPhone}}"
-        bindinput="onPhoneInput"
-      />
-      <button class="grant-btn" bindtap="grantDoctor">授权</button>
-    </view>
-    <view class="grant-hint">医生确认后即可查看您的睡眠数据</view>
+  <!-- 顶部标题 -->
+  <view class="page-header">
+    <text class="page-title">已授权医生</text>
   </view>
 
-  <!-- 已授权列表 -->
-  <view class="list-section">
-    <view class="section-title">已授权医生</view>
-    <view wx:if="{{loading}}" class="loading">加载中...</view>
-    <view wx:elif="{{grantedList.length === 0}}" class="empty">暂无授权记录</view>
-    <view wx:else class="doctor-list">
-      <view
-        class="doctor-card"
-        wx:for="{{grantedList}}"
-        wx:key="id"
-      >
-        <view class="doctor-info">
-          <view class="doctor-name">{{item.doctor_name || '医生'}}</view>
-          <view class="doctor-phone">{{item.doctor_phone}}</view>
-          <view class="doctor-status {{item.status}}">
-            {{item.status === 'pending' ? '待确认' : '已授权'}}
-          </view>
+  <!-- 加载状态 -->
+  <view wx:if="{{loading}}" class="loading">加载中...</view>
+
+  <!-- 医生卡片列表 -->
+  <view wx:else class="doctor-list">
+    <view
+      class="doctor-card"
+      wx:for="{{grantedList}}"
+      wx:key="id"
+    >
+      <view class="card-info">
+        <view class="card-name">{{item.doctor_name}}</view>
+        <view class="card-phone">{{item.doctor_phone}}</view>
+        <view class="card-status {{item.status}}">
+          {{item.status === 'pending' ? '待确认' : '已授权'}}
         </view>
-        <view class="doctor-expire">有效期至 {{item.expire_date}}</view>
-        <button
-          class="revoke-btn"
-          data-doctor-id="{{item.doctor_id}}"
-          bindtap="revokeGrant"
-        >撤销授权</button>
+        <view class="card-expire">有效期至 {{item.expire_date}}</view>
       </view>
+      <button
+        class="revoke-btn"
+        data-doctor-id="{{item.doctor_id}}"
+        bindtap="handleRevoke"
+      >撤销</button>
     </view>
+    <view wx:if="{{grantedList.length === 0}}" class="empty">暂无授权记录</view>
+  </view>
+
+  <!-- 底部添加区域 -->
+  <view class="add-section">
+    <input
+      class="phone-input"
+      type="text"
+      placeholder="请输入医生手机号"
+      value="{{doctorPhone}}"
+      bindinput="onPhoneInput"
+    />
+    <button class="add-btn" bindtap="handleAdd">添加</button>
   </view>
 </view>

@@ -33,8 +33,8 @@ Page({
     this.setData({ doctorPhone: e.detail.value });
   },
 
-  // 授权医生
-  grantDoctor() {
+  // 添加授权
+  handleAdd() {
     const { doctorPhone } = this.data;
     if (!doctorPhone) {
       wx.showToast({ title: '请输入医生手机号', icon: 'none' });
@@ -63,7 +63,7 @@ Page({
   },
 
   // 撤销授权
-  revokeGrant(e) {
+  handleRevoke(e) {
     const doctorId = e.currentTarget.dataset.doctorId;
     wx.showModal({
       title: '提示',
