@@ -453,6 +453,25 @@ function seededRandom(seed) {
   };
 }
 
+/**
+ * 生成基础睡眠指标（复用逻辑）
+ * 基于确定性随机数生成器产生每日睡眠的核心数值指标。
+ * @param {Function} rand - seededRandom 返回的随机数函数
+ * @returns {{totalSleep, deepSleep, remSleep, lightSleep, sleepScore, awakeCount, awakeMinutes}}
+ */
+function generateBaseMetrics(rand) {
+  const totalSleep  = Math.floor(300 + rand() * 180);              // 300-480 分钟
+  const deepRatio   = 0.15 + rand() * 0.20;                         // 0.15-0.35
+  const remRatio    = 0.20 + rand() * 0.05;                          // 0.20-0.25
+  const deepSleep   = Math.floor(totalSleep * deepRatio);
+  const remSleep    = Math.floor(totalSleep * remRatio);
+  const lightSleep  = totalSleep - deepSleep - remSleep;
+  const sleepScore  = Math.floor(60 + rand() * 40);                // 60-100
+  const awakeCount  = Math.floor(rand() * 6);                      // 0-5 次
+  const awakeMinutes = Math.floor(rand() * 30);                   // 0-29 分钟
+  return { totalSleep, deepSleep, remSleep, lightSleep, sleepScore, awakeCount, awakeMinutes };
+}
+
 // =====================================================
 // 获取每日睡眠报告 GET /api/sleep/report/daily
 // =====================================================
@@ -494,16 +513,8 @@ app.get('/api/sleep/report/daily', authenticateToken, async (req, res) => {
     // ---- 5. 生成模拟睡眠数据 ----
     const seedKey = `${userId}_${deviceId}_${reportDate}`;
     const rand = seededRandom(seedKey);
-
-    const totalSleep = Math.floor(300 + rand() * 180);              // 300-480 分钟
-    const deepRatio = 0.15 + rand() * 0.20;                         // 0.15-0.35
-    const remRatio = 0.20 + rand() * 0.05;                          // 0.20-0.25
-    const deepSleep = Math.floor(totalSleep * deepRatio);
-    const remSleep = Math.floor(totalSleep * remRatio);
-    const lightSleep = totalSleep - deepSleep - remSleep;
-    const sleepScore = Math.floor(60 + rand() * 40);                // 60-100
-    const awakeCount = Math.floor(rand() * 6);                      // 0-5 次
-    const awakeMinutes = Math.floor(rand() * 30);                   // 0-29 分钟
+    const metrics = generateBaseMetrics(rand);
+    const { totalSleep, deepSleep, remSleep, lightSleep, sleepScore, awakeCount, awakeMinutes } = metrics;
 
     // ---- 6. 插入新报告 ----
     try {
@@ -548,6 +559,105 @@ app.get('/api/sleep/report/daily', authenticateToken, async (req, res) => {
     console.error('[睡眠报告] 服务器错误：', err);
     res.status(500).json({ code: 5001, message: '服务器内部错误', data: null });
   }
+});
+
+// =====================================================
+// 获取睡眠分期数据 GET /api/sleep/stages
+// =====================================================
+app.get('/api/sleep/stages', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
+  let dateStr = req.query.date;
+  if (!dateStr) {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    dateStr = yesterday.toISOString().split('T')[0];
+  }
+  const db = await getDb();
+  let deviceId = 0;
+  const deviceRow = dbGetOne(db, 'SELECT id FROM devices WHERE user_id = ? LIMIT 1', [userId]);
+  if (deviceRow) deviceId = deviceRow.id;
+
+  // 1. 查询记录
+  let report = dbGetOne(
+    db,
+    'SELECT * FROM sleep_reports WHERE user_id = ? AND device_id = ? AND report_date = ?',
+    [userId, deviceId, dateStr]
+  );
+
+  // 2. 如果记录不存在，先插入基础数据（复用第4节逻辑）
+  if (!report) {
+    const seedKey = `${userId}_${deviceId}_${dateStr}`;
+    const rand = seededRandom(seedKey);
+    const metrics = generateBaseMetrics(rand);
+    const { totalSleep, deepSleep, remSleep, lightSleep, sleepScore, awakeCount, awakeMinutes } = metrics;
+
+    db.run(
+      `INSERT INTO sleep_reports
+        (user_id, device_id, report_date, sleep_score, total_sleep_minutes,
+         deep_sleep_minutes, light_sleep_minutes, rem_sleep_minutes,
+         awake_minutes, awake_count, heart_rate_json, sleep_stages_json, noise_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [userId, deviceId, dateStr, sleepScore, totalSleep,
+       deepSleep, lightSleep, remSleep,
+       awakeMinutes, awakeCount, '[]', '[]', '[]']
+    );
+    saveDb();
+    report = dbGetOne(
+      db,
+      'SELECT * FROM sleep_reports WHERE user_id = ? AND device_id = ? AND report_date = ?',
+      [userId, deviceId, dateStr]
+    );
+  }
+
+  // 3. 检查 sleep_stages_json 字段
+  let stages = [];
+  let labels = [];
+  if (report.sleep_stages_json) {
+    try {
+      stages = JSON.parse(report.sleep_stages_json);
+      if (Array.isArray(stages) && stages.length === 48) {
+        // 已有有效分期数据，生成标签并返回
+        for (let i = 0; i < 48; i++) {
+          const hours = Math.floor(i * 0.5 / 60);
+          const minutes = (i * 0.5) % 60;
+          labels.push(`${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`);
+        }
+        return res.json({ code: 0, message: 'success', data: { date: dateStr, stages, labels } });
+      }
+    } catch (e) { /* JSON 解析失败，继续生成 */ }
+  }
+
+  // 4. 生成分期数据（确定性随机）
+  const seedKey = `${userId}_${deviceId}_${dateStr}`;
+  const rand = seededRandom(seedKey);
+  const TOTAL_POINTS = 48;
+  const newStages = [];
+  for (let i = 0; i < TOTAL_POINTS; i++) {
+    const position = i / TOTAL_POINTS;
+    let deepProb = Math.max(0.1, 0.6 - position * 0.8);
+    let remProb = Math.min(0.6, 0.1 + position * 0.5);
+    let lightProb = 0.25 + rand() * 0.2;
+    const r = rand();
+    let stage;
+    if (r < deepProb) stage = 2;
+    else if (r < deepProb + lightProb) stage = 1;
+    else if (r < deepProb + lightProb + remProb) stage = 3;
+    else stage = 0;
+    if (rand() < 0.05 && i > 5 && i < TOTAL_POINTS - 5) stage = 0;
+    newStages.push(stage);
+  }
+
+  // 5. 更新数据库
+  db.run('UPDATE sleep_reports SET sleep_stages_json = ? WHERE id = ?', [JSON.stringify(newStages), report.id]);
+  saveDb();
+
+  // 6. 生成标签
+  for (let i = 0; i < TOTAL_POINTS; i++) {
+    const hours = Math.floor(i * 0.5 / 60);
+    const minutes = (i * 0.5) % 60;
+    labels.push(`${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`);
+  }
+  res.json({ code: 0, message: 'success', data: { date: dateStr, stages: newStages, labels } });
 });
 
 // =====================================================
