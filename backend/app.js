@@ -1249,5 +1249,51 @@ app.get('/api/doctor/patients', authenticateToken, async (req, res) => {
   return res.json({ code: 0, message: 'success', data: patients });
 });
 
+// GET /api/doctor/patient/data —— 获取指定患者的睡眠报告
+app.get('/api/doctor/patient/data', authenticateToken, async (req, res) => {
+  const doctorId = req.user.id;
+  if (req.user.role !== 'doctor') {
+    return res.json({ code: 1001, message: '仅限医生访问', data: null });
+  }
+
+  const patientId = parseInt(req.query.patient_id, 10);
+  if (!patientId || isNaN(patientId)) {
+    return res.json({ code: 1001, message: '请指定患者', data: null });
+  }
+
+  // 日期参数，默认昨天
+  let date = req.query.date;
+  if (!date) {
+    const y = new Date();
+    y.setDate(y.getDate() - 1);
+    date = y.toISOString().slice(0, 10);
+  }
+
+  const db = await getDb();
+
+  // 1. 权限校验：仅 active 状态可查看数据
+  const auth = dbGetOne(db, `
+    SELECT id FROM doctor_authorizations
+    WHERE doctor_id = ? AND patient_id = ?
+      AND status = 'active' AND expire_date >= date('now')
+  `, [doctorId, patientId]);
+
+  if (!auth) {
+    return res.json({ code: 1001, message: '无权查看该患者数据（需先确认授权）', data: null });
+  }
+
+  // 2. 查询睡眠报告
+  const report = dbGetOne(db, `
+    SELECT * FROM sleep_reports
+    WHERE user_id = ? AND report_date = ?
+  `, [patientId, date]);
+
+  if (!report) {
+    return res.json({ code: 1001, message: '暂无数据', data: null });
+  }
+
+  return res.json({ code: 0, message: 'success', data: report });
+});
+
 // 启动服务
 start();
