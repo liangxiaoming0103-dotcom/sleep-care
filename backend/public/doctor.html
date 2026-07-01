@@ -431,6 +431,39 @@
     }
     .chart-container { width: 100%; height: 380px; }
 
+    /* 干预建议 */
+    .note-card {
+      background: #fff; border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm); padding: 28px 28px 22px;
+      margin-bottom: 28px;
+    }
+    .note-title {
+      font-size: 16px; font-weight: 800; color: var(--slate-800);
+      margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+    }
+    .note-textarea {
+      width: 100%; height: 120px; padding: 14px 16px;
+      font-size: 14px; font-family: inherit; line-height: 1.6;
+      border: 1.5px solid var(--slate-200); border-radius: 12px;
+      outline: none; resize: vertical; background: var(--slate-50);
+      transition: all var(--transition); color: var(--slate-800);
+    }
+    .note-textarea:focus {
+      border-color: var(--blue-400); background: #fff;
+      box-shadow: 0 0 0 4px rgba(59,130,246,.08);
+    }
+    .note-textarea::placeholder { color: var(--slate-300); }
+    .note-actions {
+      display: flex; align-items: center; justify-content: flex-end;
+      gap: 12px; margin-top: 14px;
+    }
+    .note-saved {
+      font-size: 13px; color: var(--emerald-600); font-weight: 700;
+      display: flex; align-items: center; gap: 4px;
+      opacity: 0; transition: opacity .3s;
+    }
+    .note-saved.show { opacity: 1; }
+
     /* ============================================================
        加载
        ============================================================ */
@@ -611,6 +644,17 @@
     </div>
 
     <div class="metrics-grid" id="metrics-grid"></div>
+
+    <!-- 干预建议 -->
+    <div class="note-card">
+      <div class="note-title">📝 干预建议</div>
+      <textarea class="note-textarea" id="note-textarea"
+                placeholder="请输入对该患者的干预建议…"></textarea>
+      <div class="note-actions">
+        <span class="note-saved" id="note-saved">✓ 已保存</span>
+        <button class="btn btn-sm btn-blue" id="note-save-btn" onclick="handleSaveNote()">保存建议</button>
+      </div>
+    </div>
 
     <div class="chart-card">
       <div class="chart-title">📈 近 7 天睡眠评分趋势</div>
@@ -998,6 +1042,66 @@ async function showReport(patient) {
   const scores = await Promise.all(scorePromises);
   // 延迟一帧确保容器可见后再初始化图表
   requestAnimationFrame(() => renderChart(dates, scores));
+
+  // 加载已有干预建议
+  loadDoctorNote(patient.patient_id);
+}
+
+/** 加载已保存的干预建议 */
+async function loadDoctorNote(patientId) {
+  const textarea = document.getElementById('note-textarea');
+  const savedEl  = document.getElementById('note-saved');
+  textarea.value = '';
+  savedEl.classList.remove('show');
+
+  try {
+    const res = await authFetch(API_BASE + '/api/doctor/note?patient_id=' + patientId);
+    const json = await res.json();
+    if (json.code === 0 && json.data && json.data.doctor_note) {
+      textarea.value = json.data.doctor_note;
+    }
+  } catch (err) {
+    console.error('[Note load]', err);
+  }
+}
+
+/** 保存干预建议 */
+async function handleSaveNote() {
+  const textarea = document.getElementById('note-textarea');
+  const btn      = document.getElementById('note-save-btn');
+  const savedEl  = document.getElementById('note-saved');
+  const note = textarea.value.trim();
+
+  if (!currentPatient) return;
+
+  btn.disabled = true;
+  btn.textContent = '保存中…';
+  savedEl.classList.remove('show');
+
+  try {
+    const res = await authFetch(API_BASE + '/api/doctor/note', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        patient_id: currentPatient.patient_id,
+        note: note
+      })
+    });
+    const json = await res.json();
+
+    if (json.code === 0) {
+      savedEl.classList.add('show');
+      setTimeout(() => savedEl.classList.remove('show'), 2500);
+    } else {
+      showToast(json.message || '保存失败');
+    }
+  } catch (err) {
+    console.error('[Note save]', err);
+    showToast('网络错误，请重试');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '保存建议';
+  }
 }
 
 function renderMetrics(report) {
