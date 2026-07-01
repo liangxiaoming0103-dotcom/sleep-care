@@ -1,107 +1,133 @@
 /* pages/login/login.wxss */
-/* 登录页面样式 */
+/* 登录页面 — 靛蓝睡眠主题 */
 
-/* 1. 容器充满全屏，flex 居中 */
-.login-container {
+/* ===== 容器 ===== */
+.container {
   width: 100vw;
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  background-color: #f0f4f8;
-  padding: 0 60rpx;
+  justify-content: center;
+  background: linear-gradient(180deg, #eef2ff 0%, #f5f3ff 40%, #fafafa 100%);
+  padding: 0 56rpx;
   box-sizing: border-box;
 }
 
-/* 标题区域 */
-.title-section {
+/* ===== 品牌区 ===== */
+.hero {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 80rpx;
+  margin-bottom: 64rpx;
 }
 
-/* 2. 标题字体大，颜色深蓝 */
-.title {
-  font-size: 48rpx;
-  font-weight: 700;
-  color: #1a3a5c;
+.hero-icon {
+  font-size: 96rpx;
+  margin-bottom: 20rpx;
 }
 
-.subtitle {
+.hero-title {
+  font-size: 44rpx;
+  font-weight: 800;
+  color: #1e1b4b;
+  letter-spacing: 2rpx;
+}
+
+.hero-sub {
   font-size: 26rpx;
-  color: #7f8c8d;
+  color: #a5b4fc;
   margin-top: 12rpx;
+  letter-spacing: 4rpx;
 }
 
-/* 表单区域 */
-.form-section {
+/* ===== 卡片 ===== */
+.card {
   width: 100%;
-  background-color: #ffffff;
+  background: #fff;
+  border-radius: 32rpx;
+  padding: 52rpx 40rpx 40rpx;
+  box-shadow: 0 8rpx 40rpx rgba(79, 70, 229, 0.08);
+}
+
+/* ===== 输入域 ===== */
+.field {
+  display: flex;
+  align-items: center;
+  background: #f5f7fe;
   border-radius: 20rpx;
-  padding: 56rpx 44rpx 44rpx;
-  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.06);
+  padding: 0 24rpx;
+  margin-bottom: 28rpx;
+  border: 2rpx solid transparent;
+  transition: border-color 0.2s;
 }
 
-/* 输入组 */
-.input-group {
-  margin-bottom: 32rpx;
+.field:focus-within {
+  border-color: #818cf8;
+  background: #fff;
 }
 
-.input-label {
-  font-size: 28rpx;
-  color: #2c3e50;
-  margin-bottom: 12rpx;
+.field-icon {
+  font-size: 36rpx;
+  margin-right: 16rpx;
+  flex-shrink: 0;
 }
 
-/* 3. 输入框：圆角边框，合适间距 */
-.input-field {
-  width: 100%;
-  height: 88rpx;
-  background-color: #f7f9fc;
-  border: 2rpx solid #dcdfe6;
-  border-radius: 16rpx;
-  padding: 0 28rpx;
+.field-input {
+  flex: 1;
+  height: 96rpx;
   font-size: 30rpx;
-  color: #2c3e50;
-  box-sizing: border-box;
+  color: #1e1b4b;
 }
 
-.placeholder {
-  color: #c0c4cc;
-  font-size: 28rpx;
+/* placeholder 颜色 */
+.field-input::placeholder {
+  color: #c7d2fe;
 }
 
-/* 4. 登录按钮：蓝色背景，白色文字，圆角 */
-.login-btn {
+/* ===== 按钮 ===== */
+.btn {
   width: 100%;
-  height: 88rpx;
-  background-color: #3b82f6;
-  color: #ffffff;
-  font-size: 34rpx;
-  font-weight: 600;
-  border-radius: 44rpx;
+  height: 96rpx;
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: #fff;
+  font-size: 32rpx;
+  font-weight: 700;
+  border-radius: 48rpx;
   border: none;
-  margin-top: 24rpx;
+  margin-top: 16rpx;
+  letter-spacing: 8rpx;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 8rpx 24rpx rgba(99, 102, 241, 0.30);
 }
 
-.login-btn:active {
-  background-color: #2563eb;
+.btn:active {
+  background: linear-gradient(135deg, #4f46e5, #4338ca);
+  transform: scale(0.98);
 }
 
-/* 底部提示区域 */
-.hint-section {
+/* ===== 底部 ===== */
+.footer {
   display: flex;
-  justify-content: center;
-  margin-top: 32rpx;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 36rpx;
+  gap: 14rpx;
 }
 
-/* 5. 提示文字：灰色，字号小 */
-.hint-text {
-  font-size: 24rpx;
-  color: #b0b7c3;
+.footer-hint {
+  font-size: 22rpx;
+  color: #c7d2fe;
+}
+
+.footer-link {
+  font-size: 28rpx;
+  color: #6366f1;
+  font-weight: 600;
+}
+
+.footer-link:active {
+  color: #4f46e5;
 }

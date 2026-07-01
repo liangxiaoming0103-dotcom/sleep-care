@@ -42,6 +42,13 @@ async function put(path, body, token) {
   return res.json();
 }
 
+async function del(path, body, token) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const res = await fetch(`${BASE}${path}`, { method: 'DELETE', headers, body: JSON.stringify(body) });
+  return res.json();
+}
+
 async function check(json, label) {
   if (json.code !== 0) fail(`${label} — code=${json.code} message="${json.message}"`);
   console.log(`      ✓ ${label}`);
@@ -52,10 +59,10 @@ async function check(json, label) {
   console.log('\n🧪 医患互动集成测试\n');
   console.log(`   API: ${BASE}\n`);
 
-  // ──── a. 注册医生 ────
-  log('注册医生 (18800000001 / 张医生 / role=doctor)');
+  // ──── a. 注册医生（Web端，client=web强制doctor角色）────
+  log('注册医生 (18800000001 / 张医生 / client=web)');
   const regDoc = await post('/api/auth/register', {
-    phone: '18800000001', password: '123456', nickname: '张医生', role: 'doctor'
+    phone: '18800000001', password: '123456', nickname: '张医生', client: 'web'
   });
   // 注册可能因已存在而失败，忽略（幂等测试）
   if (regDoc.code === 3001 || regDoc.code === 0) {
@@ -64,10 +71,10 @@ async function check(json, label) {
     fail(`注册医生 — ${regDoc.message}`);
   }
 
-  // ──── b. 注册患者 ────
-  log('注册患者 (18800000002 / 李患者 / role=patient)');
+  // ──── b. 注册患者（小程序端，默认强制patient角色）────
+  log('注册患者 (18800000002 / 李患者)');
   const regPat = await post('/api/auth/register', {
-    phone: '18800000002', password: '123456', nickname: '李患者', role: 'patient'
+    phone: '18800000002', password: '123456', nickname: '李患者'
   });
   if (regPat.code === 3001 || regPat.code === 0) {
     console.log(`      ✓ 患者账号就绪`);
@@ -101,9 +108,9 @@ async function check(json, label) {
     await check(grant, '授权医生');
   }
 
-  // ──── f. 医生登录 ────
-  log('医生登录');
-  const docLogin = await post('/api/auth/login', { phone: '18800000001', password: '123456' });
+  // ──── f. 医生登录（Web端）────
+  log('医生登录 (client=web)');
+  const docLogin = await post('/api/auth/login', { phone: '18800000001', password: '123456', client: 'web' });
   const docData = await check(docLogin, '医生登录');
   doctorToken = docData.token;
   if (docData.role !== 'doctor') fail(`医生角色错误：${docData.role}`);
@@ -157,6 +164,11 @@ async function check(json, label) {
   const noteData = await check(getNote, '获取干预建议');
   if (noteData.doctor_note !== noteText) fail(`建议内容不一致！\n  写入: ${noteText}\n  读取: ${noteData.doctor_note}`);
   console.log(`      ✓ 内容一致`);
+
+  // ──── l. 患者撤销授权 ────
+  log('患者撤销医生授权');
+  const revoke = await del('/api/doctor/revoke', { doctor_id: doctorId }, patientToken);
+  await check(revoke, '撤销授权');
 
   // ──── 完成 ────
   console.log('\n✅ 所有集成测试通过！\n');

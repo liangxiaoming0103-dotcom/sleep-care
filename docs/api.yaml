@@ -269,7 +269,10 @@ paths:
     post:
       tags: [用户认证]
       summary: 用户注册
-      description: 支持 patient / doctor / admin 角色。不传 role 默认为 patient。
+      description: |
+        角色由 client 参数决定：
+        - 不传 client（小程序端）：强制注册为 patient
+        - client=web（Web端）：强制注册为 doctor
       security: []
       requestBody:
         required: true
@@ -290,15 +293,15 @@ paths:
                 nickname:
                   type: string
                   example: "张医生"
-                role:
+                client:
                   type: string
-                  enum: [patient, doctor, admin]
-                  default: patient
+                  enum: [web]
+                  description: web=医生端注册，不传=小程序端注册
             example:
               phone: "18800000001"
               password: "123456"
               nickname: "张医生"
-              role: "doctor"
+              client: "web"
       responses:
         "200":
           description: 注册成功
@@ -323,6 +326,10 @@ paths:
     post:
       tags: [用户认证]
       summary: 用户登录
+      description: |
+        角色校验规则：
+        - 不传 client（小程序端）：仅允许 patient 登录，医生返回 1003
+        - client=web（Web端）：仅允许 doctor 登录，患者返回 1003
       security: []
       requestBody:
         required: true
@@ -338,6 +345,10 @@ paths:
                 password:
                   type: string
                   example: "123456"
+                client:
+                  type: string
+                  enum: [web]
+                  description: web=医生端登录，不传=小程序端登录
       responses:
         "200":
           description: 登录成功
@@ -510,7 +521,7 @@ paths:
     get:
       tags: [睡眠报告]
       summary: 获取睡眠分期数据
-      description: 48 个采样点，每 30 秒。0=清醒 1=浅睡 2=深睡 3=REM
+      description: 48 个采样点，22:00-06:00，每 10 分钟。0=清醒 1=浅睡 2=深睡 3=REM
       security:
         - BearerAuth: []
       parameters:
@@ -593,6 +604,154 @@ paths:
                   labels: ["06/28", "06/29", "06/30"]
                   scores: [82, 75, 78]
                   avg_score: 78.3
+
+  # ========== 心率 ==========
+  /api/sleep/heart:
+    get:
+      tags: [睡眠报告]
+      summary: 获取心率数据
+      description: 96 个采样点，22:00-06:00，每 5 分钟
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: 心率数据
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+              example:
+                code: 0
+                message: "success"
+                data:
+                  date: "2026-06-30"
+                  heartRate: [62.3, 62.8, 64.3]
+                  labels: ["22:00", "22:05", "22:10"]
+
+  /api/sleep/breath:
+    get:
+      tags: [睡眠报告]
+      summary: 获取呼吸频率数据
+      description: 96 个采样点，22:00-06:00，每 5 分钟
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: 呼吸频率数据
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+              example:
+                code: 0
+                message: "success"
+                data:
+                  date: "2026-06-30"
+                  breathRate: [14.2, 14.5, 13.8]
+                  labels: ["22:00", "22:05", "22:10"]
+
+  # ========== 个人信息 ==========
+  /api/user/profile:
+    get:
+      tags: [个人信息]
+      summary: 获取个人信息
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: 个人信息
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                properties:
+                  data:
+                    $ref: "#/components/schemas/UserProfile"
+              example:
+                code: 0
+                message: "success"
+                data:
+                  id: 15
+                  phone: "18800000002"
+                  nickname: "李患者"
+                  gender: 1
+                  birth_year: 1990
+                  role: "patient"
+    put:
+      tags: [个人信息]
+      summary: 更新个人信息
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nickname:
+                  type: string
+                gender:
+                  type: integer
+                  description: 0=未知 1=男 2=女
+                birth_year:
+                  type: integer
+      responses:
+        "200":
+          description: 保存成功
+          content:
+            application/json:
+              example:
+                code: 0
+                message: "保存成功"
+                data:
+                  id: 15
+                  nickname: "李患者"
+                  gender: 1
+                  birth_year: 1990
+                  role: "patient"
+
+  # ========== 患者检查医生留言 ==========
+  /api/patient/note/check:
+    get:
+      tags: [医生授权]
+      summary: 患者检查是否有医生留言
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: 留言状态
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                properties:
+                  data:
+                    $ref: "#/components/schemas/DoctorNoteCheck"
+              example:
+                code: 0
+                message: "success"
+                data:
+                  has_note: true
+                  doctor_name: "张医生"
+                  doctor_note: "建议22:30前入睡"
+                  updated_at: "2026-07-01T08:00:00.000Z"
 
   # ========== 个性化设置 ==========
   /api/setting/plan:

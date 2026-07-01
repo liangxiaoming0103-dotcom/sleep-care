@@ -749,7 +749,7 @@ async function handleLogin() {
     const res = await fetch(API_BASE + '/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, password })
+      body: JSON.stringify({ phone, password, client: 'web' })
     });
     const json = await res.json();
 
@@ -837,7 +837,8 @@ async function handleRegister() {
         phone: phone,
         password: password,
         nickname: nickname,
-        role: 'doctor'
+        role: 'doctor',
+        client: 'web'
       })
     });
     const json = await res.json();

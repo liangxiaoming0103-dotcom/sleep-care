@@ -10,8 +10,19 @@ Page({
     password2: ''   // 确认密码
   },
 
+  /** 返回上一页（兼容未从登录页跳转的场景） */
   goBack() {
-    wx.navigateBack();
+    const pages = getCurrentPages();
+    if (pages.length > 1) {
+      wx.navigateBack();
+    } else {
+      wx.redirectTo({ url: '/pages/login/login' });
+    }
+  },
+
+  /** 跳转到登录页 */
+  goLogin() {
+    wx.redirectTo({ url: '/pages/login/login' });
   },
 
   inputNickname(e) {
@@ -66,10 +77,10 @@ Page({
       success(res) {
         if (res.data.code === 0) {
           wx.showToast({ title: '注册成功', icon: 'success' });
-          // 延迟跳转到登录页
+          // 跳转登录页，携带手机号
           setTimeout(() => {
-            wx.navigateBack();
-          }, 1200);
+            wx.redirectTo({ url: `/pages/login/login?phone=${phone.trim()}` });
+          }, 1000);
         } else {
           wx.showToast({ title: res.data.message, icon: 'none' });
         }

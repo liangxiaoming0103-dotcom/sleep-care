@@ -113,8 +113,9 @@ app.post('/api/auth/register', async (req, res) => {
       return res.json({ code: 1001, message: '密码长度不能少于6位', data: null });
     }
 
-    // ⬇️ 关键改动：从请求体读取 role，默认为 'patient'
-    const userRole = req.body.role || 'patient';
+    // 小程序端强制患者，Web端强制医生
+    const isWeb = req.body.client === 'web';
+    const userRole = isWeb ? 'doctor' : 'patient';
 
     // ---- 获取数据库连接 ----
     const db = await getDb();
@@ -199,6 +200,18 @@ app.post('/api/auth/login', async (req, res) => {
       return res.json({ code: 2001, message: '用户不存在，请先注册', data: null });
     }
 
+    // ---- 4.5 角色校验：小程序仅限患者，Web端仅限医生 ----
+    const roleText = (typeof user.role === 'number')
+      ? (ROLE_MAP.intToText[user.role] || 'patient')
+      : (user.role || 'patient');
+    const isWeb = req.body.client === 'web';
+    if (isWeb && roleText !== 'doctor') {
+      return res.json({ code: 1003, message: '患者请使用小程序登录', data: null });
+    }
+    if (!isWeb && roleText !== 'patient') {
+      return res.json({ code: 1003, message: '医生/管理员请使用Web端登录', data: null });
+    }
+
     // ---- 5. 密码验证 ----
     if (!bcrypt.compareSync(password, user.password_hash)) {
       return res.json({ code: 1001, message: '密码错误', data: null });
@@ -209,11 +222,7 @@ app.post('/api/auth/login', async (req, res) => {
       return res.json({ code: 3001, message: '账号已被禁用', data: null });
     }
 
-    // ---- 7. 生成 JWT Token，payload 包含 id、phone、role（文本形式），有效期 7 天 ----
-    // role 字段存储为文本（'patient'/'doctor'/'admin'），兼容旧整数数据
-    const roleText = (typeof user.role === 'number')
-      ? (ROLE_MAP.intToText[user.role] || 'patient')
-      : (user.role || 'patient');
+    // ---- 7. 生成 JWT Token，有效期 7 天（roleText 已在步骤 4.5 计算，此处复用） ----
     const token = jwt.sign(
       { id: user.id, phone: user.phone, role: roleText },
       JWT_SECRET,
@@ -253,6 +262,12 @@ app.get('/api/user/profile', authenticateToken, async (req, res) => {
     [req.user.id]
   );
   if (!user) return res.json({ code: 2001, message: '用户不存在', data: null });
+  // 兼容旧整数 role 数据
+  if (user) {
+    user.role = (typeof user.role === 'number')
+      ? (ROLE_MAP.intToText[user.role] || 'patient')
+      : (user.role || 'patient');
+  }
   return res.json({ code: 0, message: 'success', data: user });
 });
 
@@ -545,11 +560,11 @@ app.get('/api/sleep/report/daily', authenticateToken, async (req, res) => {
     );
     const deviceId = firstDevice ? firstDevice.id : 0;
 
-    // ---- 3. 查询是否已有今日报告 ----
+    // ---- 3. 查询是否已有今日报告（只用 user_id+report_date，避免 device_id 不匹配） ----
     const existReport = dbGetOne(
       db,
-      'SELECT * FROM sleep_reports WHERE user_id = ? AND device_id = ? AND report_date = ?',
-      [userId, deviceId, reportDate]
+      'SELECT * FROM sleep_reports WHERE user_id = ? AND report_date = ?',
+      [userId, reportDate]
     );
 
     // ---- 4. 已有报告直接返回 ----
@@ -582,8 +597,8 @@ app.get('/api/sleep/report/daily', authenticateToken, async (req, res) => {
       // ---- 8. 查询并返回新记录 ----
       const newReport = dbGetOne(
         db,
-        'SELECT * FROM sleep_reports WHERE user_id = ? AND device_id = ? AND report_date = ?',
-        [userId, deviceId, reportDate]
+        'SELECT * FROM sleep_reports WHERE user_id = ? AND report_date = ?',
+        [userId, reportDate]
       );
 
       return res.json({ code: 0, message: 'success', data: newReport });
@@ -592,8 +607,8 @@ app.get('/api/sleep/report/daily', authenticateToken, async (req, res) => {
       if (err.message && err.message.includes('UNIQUE constraint failed')) {
         const exist = dbGetOne(
           db,
-          'SELECT * FROM sleep_reports WHERE user_id = ? AND device_id = ? AND report_date = ?',
-          [userId, deviceId, reportDate]
+          'SELECT * FROM sleep_reports WHERE user_id = ? AND report_date = ?',
+          [userId, reportDate]
         );
         if (exist) {
           return res.json({ code: 0, message: 'success', data: exist });
@@ -627,8 +642,8 @@ app.get('/api/sleep/stages', authenticateToken, async (req, res) => {
   // 1. 查询记录
   let report = dbGetOne(
     db,
-    'SELECT * FROM sleep_reports WHERE user_id = ? AND device_id = ? AND report_date = ?',
-    [userId, deviceId, dateStr]
+    'SELECT * FROM sleep_reports WHERE user_id = ? AND report_date = ?',
+    [userId, dateStr]
   );
 
   // 2. 若不存在，生成基础指标并插入（复用第4节逻辑）
@@ -658,14 +673,14 @@ app.get('/api/sleep/stages', authenticateToken, async (req, res) => {
       saveDb();
       report = dbGetOne(
         db,
-        'SELECT * FROM sleep_reports WHERE user_id = ? AND device_id = ? AND report_date = ?',
-        [userId, deviceId, dateStr]
+        'SELECT * FROM sleep_reports WHERE user_id = ? AND report_date = ?',
+        [userId, dateStr]
       );
     } catch (err) {
       // 处理重复
       report = dbGetOne(db,
-        'SELECT * FROM sleep_reports WHERE user_id=? AND device_id=? AND report_date=?',
-        [userId, deviceId, dateStr]);
+        'SELECT * FROM sleep_reports WHERE user_id=? AND report_date=?',
+        [userId, dateStr]);
       if (!report) return res.json({ code: 1001, message: '生成报告失败' });
     }
   }
@@ -677,10 +692,11 @@ app.get('/api/sleep/stages', authenticateToken, async (req, res) => {
     try {
       stages = JSON.parse(report.sleep_stages_json);
       if (Array.isArray(stages) && stages.length === 48) {
-        // 已有有效分期数据，生成标签并返回
+        // 48 个采样点，跨 8 小时（22:00-06:00），每点 10 分钟
         for (let i = 0; i < 48; i++) {
-          const hours = Math.floor(i * 0.5 / 60);
-          const minutes = (i * 0.5) % 60;
+          const totalMin = 22 * 60 + i * 10;
+          const hours = Math.floor(totalMin / 60) % 24;
+          const minutes = totalMin % 60;
           labels.push(`${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`);
         }
         return res.json({ code: 0, message: 'success', data: { date: dateStr, stages, labels } });
@@ -712,10 +728,11 @@ app.get('/api/sleep/stages', authenticateToken, async (req, res) => {
   db.run('UPDATE sleep_reports SET sleep_stages_json = ? WHERE id = ?', [JSON.stringify(newStages), report.id]);
   saveDb();
 
-  // 6. 生成标签
+  // 6. 生成标签（48 个采样点，22:00-06:00，每点 10 分钟）
   for (let i = 0; i < TOTAL_POINTS; i++) {
-    const hours = Math.floor(i * 0.5 / 60);
-    const minutes = (i * 0.5) % 60;
+    const totalMin = 22 * 60 + i * 10;
+    const hours = Math.floor(totalMin / 60) % 24;
+    const minutes = totalMin % 60;
     labels.push(`${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`);
   }
   res.json({ code: 0, message: 'success', data: { date: dateStr, stages: newStages, labels } });
@@ -740,8 +757,8 @@ app.get('/api/sleep/noise', authenticateToken, async (req, res) => {
   // 1. 查询记录
   let report = dbGetOne(
     db,
-    'SELECT * FROM sleep_reports WHERE user_id = ? AND device_id = ? AND report_date = ?',
-    [userId, deviceId, dateStr]
+    'SELECT * FROM sleep_reports WHERE user_id = ? AND report_date = ?',
+    [userId, dateStr]
   );
 
   // 2. 若不存在，生成基础指标并插入（复用第4节逻辑）
@@ -771,13 +788,13 @@ app.get('/api/sleep/noise', authenticateToken, async (req, res) => {
       saveDb();
       report = dbGetOne(
         db,
-        'SELECT * FROM sleep_reports WHERE user_id = ? AND device_id = ? AND report_date = ?',
-        [userId, deviceId, dateStr]
+        'SELECT * FROM sleep_reports WHERE user_id = ? AND report_date = ?',
+        [userId, dateStr]
       );
     } catch (err) {
       report = dbGetOne(db,
-        'SELECT * FROM sleep_reports WHERE user_id=? AND device_id=? AND report_date=?',
-        [userId, deviceId, dateStr]);
+        'SELECT * FROM sleep_reports WHERE user_id=? AND report_date=?',
+        [userId, dateStr]);
       if (!report) return res.json({ code: 1001, message: '生成报告失败' });
     }
   }
@@ -870,8 +887,8 @@ app.get('/api/sleep/heart', authenticateToken, async (req, res) => {
 
   // 1. 查询或创建报告
   let report = dbGetOne(db,
-    'SELECT * FROM sleep_reports WHERE user_id = ? AND device_id = ? AND report_date = ?',
-    [userId, deviceId, dateStr]
+    'SELECT * FROM sleep_reports WHERE user_id = ? AND report_date = ?',
+    [userId, dateStr]
   );
   if (!report) {
     const seedKey = `${userId}_${deviceId}_${dateStr}`;
@@ -890,13 +907,13 @@ app.get('/api/sleep/heart', authenticateToken, async (req, res) => {
       );
       saveDb();
       report = dbGetOne(db,
-        'SELECT * FROM sleep_reports WHERE user_id = ? AND device_id = ? AND report_date = ?',
-        [userId, deviceId, dateStr]
+        'SELECT * FROM sleep_reports WHERE user_id = ? AND report_date = ?',
+        [userId, dateStr]
       );
     } catch (err) {
       report = dbGetOne(db,
-        'SELECT * FROM sleep_reports WHERE user_id=? AND device_id=? AND report_date=?',
-        [userId, deviceId, dateStr]);
+        'SELECT * FROM sleep_reports WHERE user_id=? AND report_date=?',
+        [userId, dateStr]);
       if (!report) return res.json({ code: 1001, message: '生成报告失败' });
     }
   }
@@ -969,8 +986,8 @@ app.get('/api/sleep/breath', authenticateToken, async (req, res) => {
 
   // 1. 查询或创建报告
   let report = dbGetOne(db,
-    'SELECT * FROM sleep_reports WHERE user_id = ? AND device_id = ? AND report_date = ?',
-    [userId, deviceId, dateStr]
+    'SELECT * FROM sleep_reports WHERE user_id = ? AND report_date = ?',
+    [userId, dateStr]
   );
   if (!report) {
     const seedKey = `${userId}_${deviceId}_${dateStr}`;
@@ -989,13 +1006,13 @@ app.get('/api/sleep/breath', authenticateToken, async (req, res) => {
       );
       saveDb();
       report = dbGetOne(db,
-        'SELECT * FROM sleep_reports WHERE user_id = ? AND device_id = ? AND report_date = ?',
-        [userId, deviceId, dateStr]
+        'SELECT * FROM sleep_reports WHERE user_id = ? AND report_date = ?',
+        [userId, dateStr]
       );
     } catch (err) {
       report = dbGetOne(db,
-        'SELECT * FROM sleep_reports WHERE user_id=? AND device_id=? AND report_date=?',
-        [userId, deviceId, dateStr]);
+        'SELECT * FROM sleep_reports WHERE user_id=? AND report_date=?',
+        [userId, dateStr]);
       if (!report) return res.json({ code: 1001, message: '生成报告失败' });
     }
   }
@@ -1066,8 +1083,8 @@ async function getOrCreateDailyScore(userId, deviceId, dateStr) {
   const db = await getDb();
 
   const row = dbGetOne(db,
-    'SELECT sleep_score FROM sleep_reports WHERE user_id = ? AND device_id = ? AND report_date = ?',
-    [userId, deviceId, dateStr]
+    'SELECT sleep_score FROM sleep_reports WHERE user_id = ? AND report_date = ?',
+    [userId, dateStr]
   );
   if (row) return row.sleep_score;
 
@@ -1098,8 +1115,8 @@ async function getOrCreateDailyScore(userId, deviceId, dateStr) {
     return score;
   } catch (err) {
     const retry = dbGetOne(db,
-      'SELECT sleep_score FROM sleep_reports WHERE user_id=? AND device_id=? AND report_date=?',
-      [userId, deviceId, dateStr]
+      'SELECT sleep_score FROM sleep_reports WHERE user_id=? AND report_date=?',
+      [userId, dateStr]
     );
     if (retry) return retry.sleep_score;
     throw err;
@@ -1290,6 +1307,11 @@ app.put('/api/setting/plan', authenticateToken, async (req, res) => {
  * @returns {{code: number, message: string, data: object|null}}
  */
 app.post('/api/doctor/grant', authenticateToken, async (req, res) => {
+  // ---- 0. 仅患者角色可发起授权 ----
+  if (req.user.role !== 'patient') {
+    return res.json({ code: 1003, message: '仅患者可发起医生授权', data: null });
+  }
+
   const patientId = req.user.id;
   const doctorId = parseInt(req.body.doctor_id, 10);
   const doctorPhone = req.body.doctor_phone;
@@ -1316,6 +1338,11 @@ app.post('/api/doctor/grant', authenticateToken, async (req, res) => {
 
   if (!doctor) {
     return res.json({ code: 1001, message: '该医生不存在', data: null });
+  }
+
+  // ---- 1.5 禁止医生给自己授权（自己挂自己的号） ----
+  if (patientId === doctor.id) {
+    return res.json({ code: 3001, message: '不能授权给自己', data: null });
   }
 
   // ---- 2. 检查是否已授权（pending 或 active） ----
@@ -1358,6 +1385,10 @@ app.post('/api/doctor/grant', authenticateToken, async (req, res) => {
  */
 app.delete('/api/doctor/revoke', authenticateToken, async (req, res) => {
   try {
+    // 仅患者可撤销授权
+    if (req.user.role !== 'patient') {
+      return res.json({ code: 1003, message: '仅患者可撤销授权', data: null });
+    }
     const patientId = req.user.id;
     const doctorId = parseInt(req.body.doctor_id, 10);
 

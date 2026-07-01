@@ -7,16 +7,50 @@ Page({
   data: {
     sleepData: null,
     loading: true,
-    hasNewNote: false
+    hasNewNote: false,
+    greeting: '',
+    nickname: ''
   },
 
   onLoad() {
+    this.setGreeting();
+    this.loadNickname();
     this.loadReport();
   },
 
   onShow() {
+    this.setGreeting();
     this.loadReport();
     this.checkDoctorNote();
+  },
+
+  /** 根据当前时间设置问候语 */
+  setGreeting() {
+    const hour = new Date().getHours();
+    let greeting;
+    if (hour >= 6 && hour < 12) {
+      greeting = '早安';
+    } else if (hour >= 12 && hour < 18) {
+      greeting = '下午好';
+    } else {
+      greeting = '晚安';
+    }
+    this.setData({ greeting });
+  },
+
+  /** 加载用户昵称 */
+  loadNickname() {
+    const token = getApp().getToken();
+    if (!token) return;
+    wx.request({
+      url: `${BASE_URL}/api/user/profile`,
+      header: { Authorization: `Bearer ${token}` },
+      success: (res) => {
+        if (res.data.code === 0 && res.data.data) {
+          this.setData({ nickname: res.data.data.nickname || '用户' });
+        }
+      }
+    });
   },
 
   loadReport() {
@@ -91,5 +125,22 @@ Page({
   /** 跳转到医生授权页 */
   goToDoctors() {
     wx.navigateTo({ url: '/pages/doctors/doctors' });
+  },
+
+  /** 退出登录 */
+  handleLogout() {
+    wx.showModal({
+      title: '退出登录',
+      content: '确定要退出当前账号吗？',
+      confirmText: '退出',
+      confirmColor: '#ef4444',
+      success: (modalRes) => {
+        if (!modalRes.confirm) return;
+        wx.removeStorageSync('token');
+        getApp().globalData.token = null;
+        wx.showToast({ title: '已退出', icon: 'none' });
+        wx.reLaunch({ url: '/pages/login/login' });
+      }
+    });
   }
 });

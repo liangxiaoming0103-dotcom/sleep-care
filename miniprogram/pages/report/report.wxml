@@ -31,15 +31,38 @@
       <view class="nav-arrow {{isToday ? 'nav-disabled' : ''}}" bindtap="onNextDay">▶</view>
     </view>
 
-    <!-- 医生建议 -->
-    <view class="advice-card" wx:if="{{doctorNote}}">
-      <view class="advice-header">
-        <text class="advice-icon">💬</text>
-        <text class="advice-title">{{doctorName}}医生</text>
-        <text class="advice-time">{{doctorNoteTime}}</text>
-      </view>
-      <text class="advice-content">{{doctorNote}}</text>
+    <!-- 医生建议（始终显示） -->
+    <view class="advice-card">
+      <!-- 有留言 -->
+      <block wx:if="{{doctorNote}}">
+        <view class="advice-header">
+          <text class="advice-icon">💬</text>
+          <text class="advice-title">{{doctorName}}医生</text>
+          <text class="advice-time">{{doctorNoteTime}}</text>
+        </view>
+        <text class="advice-content">{{doctorNote}}</text>
+      </block>
+      <!-- 已授权但无留言 -->
+      <block wx:elif="{{hasDoctor}}">
+        <view class="advice-header">
+          <text class="advice-icon">💬</text>
+          <text class="advice-title">医生建议</text>
+        </view>
+        <text class="advice-empty">暂无建议，医生查看您的数据后会在此留言</text>
+      </block>
+      <!-- 未授权医生 -->
+      <block wx:else>
+        <view class="advice-header">
+          <text class="advice-icon">👨‍⚕️</text>
+          <text class="advice-title">医生建议</text>
+        </view>
+        <text class="advice-empty">授权医生后，可在此查看医生的干预建议</text>
+        <view class="advice-action" bindtap="goToDoctors">去授权 ›</view>
+      </block>
     </view>
+
+    <!-- 模块分隔 -->
+    <view class="section-divider"></view>
 
     <!-- 视图切换 -->
     <view class="tab-bar">

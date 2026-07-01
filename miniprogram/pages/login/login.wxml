@@ -1,48 +1,48 @@
 <!--pages/login/login.wxml-->
-<!-- 登录页面：手机号 + 密码登录，调用云后台 /api/auth/login -->
+<!-- 登录页面：手机号 + 密码登录 -->
 
-<view class="login-container">
-  <!-- 顶部标题 -->
-  <view class="title-section">
-    <text class="title">智能睡眠管理</text>
-    <text class="subtitle">您的私人睡眠助手</text>
+<view class="container">
+  <!-- 顶部品牌区 -->
+  <view class="hero">
+    <view class="hero-icon">🌙</view>
+    <text class="hero-title">智能睡眠管理</text>
+    <text class="hero-sub">您的私人睡眠助手</text>
   </view>
 
-  <!-- 登录表单 -->
-  <view class="form-section">
-    <!-- 手机号输入框 -->
-    <view class="input-group">
-      <text class="input-label">手机号</text>
+  <!-- 登录卡片 -->
+  <view class="card">
+    <!-- 手机号 -->
+    <view class="field">
+      <text class="field-icon">📱</text>
       <input
-        class="input-field"
+        class="field-input"
         type="number"
         maxlength="11"
         placeholder="请输入手机号"
-        placeholder-class="placeholder"
         value="{{phone}}"
         bindinput="inputPhone"
       />
     </view>
 
-    <!-- 密码输入框 -->
-    <view class="input-group">
-      <text class="input-label">密码</text>
+    <!-- 密码 -->
+    <view class="field">
+      <text class="field-icon">🔒</text>
       <input
-        class="input-field"
+        class="field-input"
         type="password"
         placeholder="请输入密码"
-        placeholder-class="placeholder"
         value="{{password}}"
         bindinput="inputPassword"
       />
     </view>
 
     <!-- 登录按钮 -->
-    <button class="login-btn" bindtap="handleLogin">登录</button>
+    <button class="btn" bindtap="handleLogin">登 录</button>
 
-    <!-- 底部提示 -->
-    <view class="hint-section">
-      <text class="hint-text">固定密码：123456</text>
+    <!-- 底部链接 -->
+    <view class="footer">
+      <text class="footer-hint">固定密码：123456</text>
+      <text class="footer-link" bindtap="goRegister">没有账号？去注册 ›</text>
     </view>
   </view>
 </view>

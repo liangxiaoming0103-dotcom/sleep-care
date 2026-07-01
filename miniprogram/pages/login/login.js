@@ -13,12 +13,18 @@ Page({
 
   /**
    * 生命周期函数--监听页面加载
-   * 检查本地是否已有 Token，有则免登录直接跳转设备页
+   * 检查本地是否已有 Token，有则免登录直接跳转首页
+   * 支持从注册页跳转过来时自动填入手机号
    */
-  onLoad() {
+  onLoad(options) {
     const token = getApp().getToken();
     if (token) {
       wx.switchTab({ url: '/pages/home/home' });
+      return;
+    }
+    // 注册成功后跳转过来，自动填入手机号
+    if (options && options.phone) {
+      this.setData({ phone: options.phone });
     }
   },
 
@@ -34,6 +40,13 @@ Page({
    */
   inputPassword(e) {
     this.setData({ password: e.detail.value });
+  },
+
+  /**
+   * 跳转到注册页面
+   */
+  goRegister() {
+    wx.navigateTo({ url: '/pages/register/register' });
   },
 
   /**
@@ -63,16 +76,23 @@ Page({
       success(res) {
         // ---- e. 成功回调：解析响应 ----
         if (res.data.code === 0) {
-          // 保存 Token 到本地存储
           wx.setStorageSync('token', res.data.data.token);
-
-          // 提示登录成功
           wx.showToast({ title: '登录成功', icon: 'success' });
-
-          // 跳转到设备管理页
           wx.switchTab({ url: '/pages/home/home' });
+        } else if (res.data.code === 2001) {
+          // 手机号未注册 → 弹窗引导跳转注册页
+          wx.showModal({
+            title: '账号不存在',
+            content: '该手机号尚未注册，是否前往注册？',
+            confirmText: '去注册',
+            success: (modalRes) => {
+              if (modalRes.confirm) {
+                wx.redirectTo({ url: `/pages/register/register?phone=${phone.trim()}` });
+              }
+            }
+          });
         } else {
-          // 服务端返回的业务错误（密码错误、用户不存在等）
+          // 服务端返回的其他业务错误
           wx.showToast({ title: res.data.message, icon: 'none' });
         }
       },

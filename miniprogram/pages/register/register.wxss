@@ -1,117 +1,139 @@
 /* pages/register/register.wxss */
-/* 注册页面样式，与登录页保持一致 */
+/* 注册页面 — 与登录页共享靛蓝设计语言 */
 
-.register-container {
+/* ===== 容器 ===== */
+.container {
   width: 100vw;
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  position: relative;
-  background-color: #f0f4f8;
-  padding: 0 60rpx;
+  justify-content: center;
+  background: linear-gradient(180deg, #eef2ff 0%, #f5f3ff 40%, #fafafa 100%);
+  padding: 0 56rpx;
   box-sizing: border-box;
 }
 
-/* 顶部返回 */
-.top-back {
-  position: absolute;
-  top: 60rpx;
-  left: 40rpx;
+/* ===== 品牌区 ===== */
+.hero {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 4rpx;
-  font-size: 28rpx;
+  margin-bottom: 48rpx;
+  position: relative;
+  width: 100%;
+}
+
+/* 返回按钮 */
+.back-btn {
+  position: absolute;
+  left: -12rpx;
+  top: 8rpx;
+  font-size: 30rpx;
   color: #6366f1;
-  font-weight: 600;
+  font-weight: 700;
   padding: 8rpx 16rpx;
 }
-.back-arrow {
-  font-size: 40rpx;
-  line-height: 1;
+
+.hero-icon {
+  font-size: 80rpx;
+  margin-bottom: 16rpx;
 }
 
-.title-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 60rpx;
+.hero-title {
+  font-size: 44rpx;
+  font-weight: 800;
+  color: #1e1b4b;
+  letter-spacing: 2rpx;
 }
 
-.title {
-  font-size: 48rpx;
-  font-weight: 700;
-  color: #1a3a5c;
-}
-
-.subtitle {
+.hero-sub {
   font-size: 26rpx;
-  color: #7f8c8d;
-  margin-top: 12rpx;
+  color: #a5b4fc;
+  margin-top: 10rpx;
+  letter-spacing: 4rpx;
 }
 
-.form-section {
+/* ===== 卡片 ===== */
+.card {
   width: 100%;
-  background-color: #ffffff;
+  background: #fff;
+  border-radius: 32rpx;
+  padding: 44rpx 40rpx 36rpx;
+  box-shadow: 0 8rpx 40rpx rgba(79, 70, 229, 0.08);
+}
+
+/* ===== 输入域 ===== */
+.field {
+  display: flex;
+  align-items: center;
+  background: #f5f7fe;
   border-radius: 20rpx;
-  padding: 56rpx 44rpx 44rpx;
-  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.06);
+  padding: 0 24rpx;
+  margin-bottom: 24rpx;
+  border: 2rpx solid transparent;
+  transition: border-color 0.2s;
 }
 
-.input-group {
-  margin-bottom: 32rpx;
+.field:focus-within {
+  border-color: #818cf8;
+  background: #fff;
 }
 
-.input-label {
-  font-size: 28rpx;
-  color: #2c3e50;
-  margin-bottom: 12rpx;
-}
-
-.input-field {
-  width: 100%;
-  height: 88rpx;
-  background-color: #f7f9fc;
-  border: 2rpx solid #dcdfe6;
-  border-radius: 16rpx;
-  padding: 0 28rpx;
-  font-size: 30rpx;
-  color: #2c3e50;
-  box-sizing: border-box;
-}
-
-.placeholder {
-  color: #c0c4cc;
-  font-size: 28rpx;
-}
-
-.register-btn {
-  width: 100%;
-  height: 88rpx;
-  background-color: #10b981;
-  color: #ffffff;
+.field-icon {
   font-size: 34rpx;
-  font-weight: 600;
-  border-radius: 44rpx;
+  margin-right: 14rpx;
+  flex-shrink: 0;
+}
+
+.field-input {
+  flex: 1;
+  height: 92rpx;
+  font-size: 30rpx;
+  color: #1e1b4b;
+}
+
+/* placeholder 颜色 */
+.field-input::placeholder {
+  color: #c7d2fe;
+}
+
+/* ===== 按钮 ===== */
+.btn {
+  width: 100%;
+  height: 96rpx;
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: #fff;
+  font-size: 32rpx;
+  font-weight: 700;
+  border-radius: 48rpx;
   border: none;
-  margin-top: 24rpx;
+  margin-top: 12rpx;
+  letter-spacing: 8rpx;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 8rpx 24rpx rgba(99, 102, 241, 0.30);
 }
 
-.register-btn:active {
-  background-color: #059669;
+.btn:active {
+  background: linear-gradient(135deg, #4f46e5, #4338ca);
+  transform: scale(0.98);
 }
 
-.hint-section {
+/* ===== 底部 ===== */
+.footer {
   display: flex;
   justify-content: center;
   margin-top: 32rpx;
 }
 
-.hint-text {
-  font-size: 24rpx;
-  color: #b0b7c3;
+.footer-link {
+  font-size: 28rpx;
+  color: #6366f1;
+  font-weight: 600;
+}
+
+.footer-link:active {
+  color: #4f46e5;
 }

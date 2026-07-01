@@ -41,7 +41,7 @@
     <!-- 问候 + 日期 -->
     <view class="greeting-row">
       <view class="greeting-left">
-        <text class="greeting-title">早安 🌤</text>
+        <text class="greeting-title">{{greeting}}，{{nickname}}</text>
         <text class="greeting-sub">这是你昨晚的睡眠报告</text>
       </view>
       <view class="greeting-date">
@@ -109,15 +109,6 @@
         <text class="action-arrow">›</text>
       </view>
 
-      <!-- 作息设置 -->
-      <view class="action-card" bindtap="goToSettings">
-        <view class="action-left">
-          <view class="action-icon sleep-icon-bg">🌙</view>
-          <text class="action-text">作息设置</text>
-        </view>
-        <text class="action-arrow">›</text>
-      </view>
-
       <!-- 医生授权 -->
       <view class="action-card" bindtap="goToDoctors">
         <view class="action-left">
@@ -125,6 +116,24 @@
           <text class="action-text">医生授权</text>
         </view>
         <text class="action-arrow">›</text>
+      </view>
+
+      <!-- 个人设置 -->
+      <view class="action-card" bindtap="goToSettings">
+        <view class="action-left">
+          <view class="action-icon sleep-icon-bg">⚙️</view>
+          <text class="action-text">个人设置</text>
+        </view>
+        <text class="action-arrow">›</text>
+      </view>
+
+      <!-- 退出登录 -->
+      <view class="action-card logout-card" bindtap="handleLogout">
+        <view class="action-left">
+          <view class="action-icon logout-icon-bg">🚪</view>
+          <text class="action-text logout-text">退出登录</text>
+        </view>
+        <text class="action-arrow logout-arrow">›</text>
       </view>
     </view>
   </view>

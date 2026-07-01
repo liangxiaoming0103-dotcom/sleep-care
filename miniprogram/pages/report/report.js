@@ -17,6 +17,7 @@ Page({
     doctorName: '',
     doctorNote: '',
     doctorNoteTime: '',
+    hasDoctor: false,
 
     // 视图
     currentTab: 0,       // 0=分期 1=噪音 2=趋势
@@ -349,6 +350,7 @@ Page({
     const token = getApp().getToken();
     if (!token) return;
 
+    // 1. 检查是否有医生留言
     wx.request({
       url: `${BASE_URL}/api/patient/note/check`,
       header: { Authorization: `Bearer ${token}` },
@@ -358,14 +360,36 @@ Page({
           this.setData({
             doctorName: d.doctor_name,
             doctorNote: d.doctor_note,
-            doctorNoteTime: d.updated_at ? d.updated_at.slice(0, 16).replace('T', ' ') : ''
+            doctorNoteTime: d.updated_at ? d.updated_at.slice(0, 16).replace('T', ' ') : '',
+            hasDoctor: true
           });
-          // 标记已读
           wx.setStorageSync('last_note_read_time', d.updated_at);
+        } else {
+          // 2. 无留言时，检查是否已授权医生
+          this.checkHasDoctor(token);
+        }
+      },
+      fail: () => { this.checkHasDoctor(token); }
+    });
+  },
+
+  /** 检查用户是否已授权医生 */
+  checkHasDoctor(token) {
+    wx.request({
+      url: `${BASE_URL}/api/doctor/granted`,
+      header: { Authorization: `Bearer ${token}` },
+      success: (res) => {
+        if (res.data.code === 0 && res.data.data && res.data.data.length > 0) {
+          this.setData({ hasDoctor: true });
         }
       },
       fail: () => {}
     });
+  },
+
+  /** 跳转到医生授权页 */
+  goToDoctors() {
+    wx.navigateTo({ url: '/pages/doctors/doctors' });
   },
 
   /* ================================================================

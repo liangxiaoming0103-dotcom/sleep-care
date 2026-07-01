@@ -106,16 +106,19 @@ async function getMySQL() {
 
 /**
  * 查询单条记录
+ * 注意：SQLite 路径同步返回结果对象；MySQL 路径返回 Promise。
+ * 当前项目默认使用 SQLite，因此调用方无需 await（加了也不影响）。
  * @param {*} conn - getDb() 返回的连接
  * @param {string} sql - SQL 语句
  * @param {Array} params - 参数数组
+ * @returns {Object|null|Promise<Object|null>} 查询结果（单行对象或 null）
  */
-async function dbGetOne(conn, sql, params = []) {
+function dbGetOne(conn, sql, params = []) {
   if (DB_TYPE === 'mysql') {
-    const [rows] = await conn.execute(sql, params);
-    return rows.length > 0 ? rows[0] : null;
+    // MySQL：返回 Promise，调用方需 await
+    return conn.execute(sql, params).then(([rows]) => rows.length > 0 ? rows[0] : null);
   }
-  // SQLite（sql.js）
+  // SQLite（sql.js）：同步返回，兼容现有代码
   const stmt = conn.prepare(sql);
   stmt.bind(params);
   if (stmt.step()) {
@@ -129,16 +132,19 @@ async function dbGetOne(conn, sql, params = []) {
 
 /**
  * 查询多条记录
+ * 注意：SQLite 路径同步返回数组；MySQL 路径返回 Promise。
+ * 当前项目默认使用 SQLite，因此调用方无需 await（加了也不影响）。
  * @param {*} conn - getDb() 返回的连接
  * @param {string} sql - SQL 语句
  * @param {Array} params - 参数数组
+ * @returns {Array|Promise<Array>} 查询结果数组
  */
-async function dbGetAll(conn, sql, params = []) {
+function dbGetAll(conn, sql, params = []) {
   if (DB_TYPE === 'mysql') {
-    const [rows] = await conn.execute(sql, params);
-    return rows;
+    // MySQL：返回 Promise，调用方需 await
+    return conn.execute(sql, params).then(([rows]) => rows);
   }
-  // SQLite（sql.js）
+  // SQLite（sql.js）：同步返回，兼容现有代码
   const stmt = conn.prepare(sql);
   stmt.bind(params);
   const rows = [];

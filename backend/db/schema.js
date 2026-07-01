@@ -17,6 +17,8 @@ async function initSchema() {
 
   // =====================================================
   // 1. 用户表 users
+  // 注意：role 使用 TEXT 存储（'patient'/'doctor'/'admin'），
+  //       status：1=正常 0=禁用（与旧文档相反，以代码为准）
   // =====================================================
   db.run(`
     CREATE TABLE IF NOT EXISTS users (
@@ -27,8 +29,8 @@ async function initSchema() {
       avatar_url      TEXT    NULL,
       gender          INTEGER NOT NULL DEFAULT 0,
       birth_year      INTEGER NULL,
-      role            INTEGER NOT NULL DEFAULT 0,
-      status          INTEGER NOT NULL DEFAULT 0,
+      role            TEXT    NOT NULL DEFAULT 'patient',
+      status          INTEGER NOT NULL DEFAULT 1,
       created_at      TEXT    NOT NULL DEFAULT (datetime('now','localtime')),
       updated_at      TEXT    NULL
     );
@@ -62,6 +64,7 @@ async function initSchema() {
 
   // =====================================================
   // 3. 睡眠报告表 sleep_reports
+  // 注意：UNIQUE(user_id, report_date) 通过下方唯一索引实现
   // =====================================================
   db.run(`
     CREATE TABLE IF NOT EXISTS sleep_reports (
@@ -79,12 +82,20 @@ async function initSchema() {
       heart_rate_json     TEXT,
       sleep_stages_json   TEXT,
       noise_json          TEXT,
+      breath_rate_json    TEXT,
       created_at          TEXT    NOT NULL DEFAULT (datetime('now')),
       FOREIGN KEY (user_id)   REFERENCES users(id) ON DELETE CASCADE,
       FOREIGN KEY (device_id) REFERENCES devices(id) ON DELETE CASCADE
     );
   `);
   console.log('[Schema] ✓ sleep_reports 表');
+
+  // 兼容旧数据库：为已存在的 sleep_reports 表添加 breath_rate_json 列
+  try {
+    db.run('ALTER TABLE sleep_reports ADD COLUMN breath_rate_json TEXT;');
+  } catch (_) {
+    // 列已存在
+  }
 
   // =====================================================
   // 4. 用户设置表 user_settings
@@ -132,13 +143,21 @@ async function initSchema() {
 
   // =====================================================
   // 索引（提升查询性能）
+  // 注意：唯一索引创建前先清理已存在的重复数据（保留 id 最大的那条）
   // =====================================================
-  db.run('CREATE INDEX IF NOT EXISTS idx_sleep_reports_user_id     ON sleep_reports(user_id)');
-  db.run('CREATE INDEX IF NOT EXISTS idx_sleep_reports_report_date ON sleep_reports(report_date)');
-  db.run('CREATE INDEX IF NOT EXISTS idx_devices_user_id           ON devices(user_id)');
-  db.run('CREATE INDEX IF NOT EXISTS idx_doctor_auth_doctor_id     ON doctor_authorizations(doctor_id)');
-  db.run('CREATE INDEX IF NOT EXISTS idx_doctor_auth_patient_id    ON doctor_authorizations(patient_id)');
-  console.log('[Schema] ✓ 5 个索引');
+  db.run(`
+    DELETE FROM sleep_reports
+    WHERE id NOT IN (
+      SELECT MAX(id) FROM sleep_reports GROUP BY user_id, report_date
+    );
+  `);
+  db.run('CREATE UNIQUE INDEX IF NOT EXISTS uk_sleep_reports_user_date ON sleep_reports(user_id, report_date)');
+  db.run('CREATE INDEX IF NOT EXISTS idx_sleep_reports_user_id         ON sleep_reports(user_id)');
+  db.run('CREATE INDEX IF NOT EXISTS idx_sleep_reports_report_date     ON sleep_reports(report_date)');
+  db.run('CREATE INDEX IF NOT EXISTS idx_devices_user_id               ON devices(user_id)');
+  db.run('CREATE INDEX IF NOT EXISTS idx_doctor_auth_doctor_id         ON doctor_authorizations(doctor_id)');
+  db.run('CREATE INDEX IF NOT EXISTS idx_doctor_auth_patient_id        ON doctor_authorizations(patient_id)');
+  console.log('[Schema] ✓ 6 个索引（含 1 个唯一索引）');
 
   // 持久化到磁盘
   saveDb();

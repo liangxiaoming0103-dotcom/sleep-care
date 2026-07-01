@@ -334,3 +334,23 @@
   border: 2rpx solid #fff;
   box-shadow: 0 0 0 4rpx rgba(239,68,68,0.2);
 }
+
+/* =====================================================
+   退出登录卡片
+   ===================================================== */
+.logout-card {
+  margin-top: 12rpx;
+  border: 2rpx solid #fee2e2;
+}
+.logout-card:active {
+  background: #fef2f2;
+}
+.logout-icon-bg {
+  background: #fef2f2;
+}
+.logout-text {
+  color: #dc2626;
+}
+.logout-arrow {
+  color: #fca5a5;
+}
