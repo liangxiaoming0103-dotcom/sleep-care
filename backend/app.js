@@ -1281,6 +1281,7 @@ app.get('/api/doctor/patients', authenticateToken, async (req, res) => {
   const sql = `
     SELECT u.id as patient_id, u.nickname, u.phone,
            a.status, a.expire_date, a.requested_at,
+           a.doctor_note,
            (SELECT sleep_score FROM sleep_reports
             WHERE user_id = u.id
             ORDER BY report_date DESC LIMIT 1) as latest_score
