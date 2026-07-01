@@ -1,0 +1,10 @@
+{
+  "PORT": "3000",
+  "DATABASE_TYPE": "mysql",
+  "MYSQL_HOST": "sh-cynosdbmysql-grp-i0g1cfqo.sql.tencentcdb.com",
+  "MYSQL_PORT": "22584",
+  "MYSQL_USER": "admin",
+  "MYSQL_PASSWORD": "JannZeng76@",
+  "MYSQL_DATABASE": "sleep-care-d6ge3xxpo72dcb30f",
+  "JWT_SECRET": "sleep-care-secret-key-2026"
+}
