@@ -1,0 +1,98 @@
+/* pages/register/register.wxss */
+/* 注册页面样式，与登录页保持一致 */
+
+.register-container {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #f0f4f8;
+  padding: 0 60rpx;
+  box-sizing: border-box;
+}
+
+.title-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 60rpx;
+}
+
+.title {
+  font-size: 48rpx;
+  font-weight: 700;
+  color: #1a3a5c;
+}
+
+.subtitle {
+  font-size: 26rpx;
+  color: #7f8c8d;
+  margin-top: 12rpx;
+}
+
+.form-section {
+  width: 100%;
+  background-color: #ffffff;
+  border-radius: 20rpx;
+  padding: 56rpx 44rpx 44rpx;
+  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.06);
+}
+
+.input-group {
+  margin-bottom: 32rpx;
+}
+
+.input-label {
+  font-size: 28rpx;
+  color: #2c3e50;
+  margin-bottom: 12rpx;
+}
+
+.input-field {
+  width: 100%;
+  height: 88rpx;
+  background-color: #f7f9fc;
+  border: 2rpx solid #dcdfe6;
+  border-radius: 16rpx;
+  padding: 0 28rpx;
+  font-size: 30rpx;
+  color: #2c3e50;
+  box-sizing: border-box;
+}
+
+.placeholder {
+  color: #c0c4cc;
+  font-size: 28rpx;
+}
+
+.register-btn {
+  width: 100%;
+  height: 88rpx;
+  background-color: #10b981;
+  color: #ffffff;
+  font-size: 34rpx;
+  font-weight: 600;
+  border-radius: 44rpx;
+  border: none;
+  margin-top: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.register-btn:active {
+  background-color: #059669;
+}
+
+.hint-section {
+  display: flex;
+  justify-content: center;
+  margin-top: 32rpx;
+}
+
+.hint-text {
+  font-size: 24rpx;
+  color: #b0b7c3;
+}
