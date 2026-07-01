@@ -1338,5 +1338,72 @@ app.get('/api/doctor/patient/data', authenticateToken, async (req, res) => {
   }});
 });
 
+// PUT /api/doctor/note —— 医生填写/更新干预建议
+app.put('/api/doctor/note', authenticateToken, async (req, res) => {
+  const doctorId = req.user.id;
+  if (req.user.role !== 'doctor') {
+    return res.json({ code: 1001, message: '仅限医生操作', data: null });
+  }
+
+  const patientId = parseInt(req.body.patient_id, 10);
+  const note = (req.body.note || '').trim();
+
+  if (!patientId || isNaN(patientId)) {
+    return res.json({ code: 1001, message: '请指定患者', data: null });
+  }
+
+  const db = await getDb();
+
+  // 验证授权关系：必须 status = 'active'
+  const auth = dbGetOne(db, `
+    SELECT id FROM doctor_authorizations
+    WHERE doctor_id = ? AND patient_id = ?
+      AND status = 'active' AND expire_date >= date('now')
+  `, [doctorId, patientId]);
+
+  if (!auth) {
+    return res.json({ code: 1001, message: '无权操作该患者', data: null });
+  }
+
+  // 更新干预建议
+  const now = new Date().toISOString();
+  db.run(`
+    UPDATE doctor_authorizations
+    SET doctor_note = ?, updated_at = ?
+    WHERE id = ?
+  `, [note, now, auth.id]);
+
+  saveDb();
+
+  return res.json({ code: 0, message: '保存成功', data: { doctor_note: note } });
+});
+
+// GET /api/doctor/note —— 获取医生对某患者的干预建议
+app.get('/api/doctor/note', authenticateToken, async (req, res) => {
+  const doctorId = req.user.id;
+  if (req.user.role !== 'doctor') {
+    return res.json({ code: 1001, message: '仅限医生访问', data: null });
+  }
+
+  const patientId = parseInt(req.query.patient_id, 10);
+  if (!patientId || isNaN(patientId)) {
+    return res.json({ code: 1001, message: '请指定患者', data: null });
+  }
+
+  const db = await getDb();
+
+  const row = dbGetOne(db, `
+    SELECT doctor_note FROM doctor_authorizations
+    WHERE doctor_id = ? AND patient_id = ?
+      AND status = 'active' AND expire_date >= date('now')
+  `, [doctorId, patientId]);
+
+  if (!row) {
+    return res.json({ code: 1001, message: '未找到有效授权', data: null });
+  }
+
+  return res.json({ code: 0, message: 'success', data: { doctor_note: row.doctor_note || '' } });
+});
+
 // 启动服务
 start();
