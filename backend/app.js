@@ -143,7 +143,7 @@ app.get('/', (req, res) => {
 // =====================================================
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { phone, password, nickname, role } = req.body;
+    const { phone, password, nickname } = req.body;
 
     // ---- 参数验证 ----
     if (!phone || !password) {
@@ -156,17 +156,8 @@ app.post('/api/auth/register', async (req, res) => {
       return res.json({ code: 1001, message: '密码长度不能少于6位', data: null });
     }
 
-    // ---- 角色参数转换：支持 'patient'/'doctor'/'admin' 或 0/1/2，默认 patient ----
-    let roleInt = 0; // 默认普通用户
-    if (role !== undefined && role !== null) {
-      if (typeof role === 'number') {
-        roleInt = role; // 直接使用数字 0/1/2
-      } else if (typeof role === 'string' && ROLE_MAP.textToInt[role] !== undefined) {
-        roleInt = ROLE_MAP.textToInt[role]; // 文本 → 整数
-      } else {
-        return res.json({ code: 1001, message: '无效的角色类型', data: null });
-      }
-    }
+    // ⬇️ 关键改动：从请求体读取 role，默认为 'patient'
+    const userRole = req.body.role || 'patient';
 
     // ---- 获取数据库连接 ----
     const db = await getDb();
@@ -182,11 +173,12 @@ app.post('/api/auth/register', async (req, res) => {
 
     // ---- 插入新用户 ----
     const now = new Date().toISOString();
-    const finalNickname = nickname || '用户';
+    const displayName = nickname || '用户';
 
     db.run(
-      'INSERT INTO users (phone, password_hash, nickname, role, status, created_at) VALUES (?, ?, ?, ?, 1, ?)',
-      [phone, passwordHash, finalNickname, roleInt, now]
+      `INSERT INTO users (phone, password_hash, nickname, role, status, created_at, updated_at)
+       VALUES (?, ?, ?, ?, 1, ?, ?)`,
+      [phone, passwordHash, displayName, userRole, now, now]
     );
 
     // ---- 持久化到磁盘 ----
@@ -201,7 +193,10 @@ app.post('/api/auth/register', async (req, res) => {
 
     // ---- 将整数 role 转换为文本返回给前端 ----
     if (newUser) {
-      newUser.role = ROLE_MAP.intToText[newUser.role] || 'patient';
+      // role 字段存储为文本，兼容旧整数数据
+      newUser.role = (typeof newUser.role === 'number')
+        ? (ROLE_MAP.intToText[newUser.role] || 'patient')
+        : (newUser.role || 'patient');
     }
 
     // ---- 返回成功响应 ----
@@ -258,7 +253,10 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     // ---- 7. 生成 JWT Token，payload 包含 id、phone、role（文本形式），有效期 7 天 ----
-    const roleText = ROLE_MAP.intToText[user.role] || 'patient';
+    // role 字段存储为文本（'patient'/'doctor'/'admin'），兼容旧整数数据
+    const roleText = (typeof user.role === 'number')
+      ? (ROLE_MAP.intToText[user.role] || 'patient')
+      : (user.role || 'patient');
     const token = jwt.sign(
       { id: user.id, phone: user.phone, role: roleText },
       JWT_SECRET,
