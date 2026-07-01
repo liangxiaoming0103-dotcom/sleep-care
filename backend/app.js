@@ -79,6 +79,9 @@ function dbGetAll(db, sql, params = []) {
 app.use(cors());                        // 允许跨域请求（小程序 / 医生端 Web）
 app.use(express.json());                // 解析 JSON 请求体
 
+// 配置静态文件服务（医生端 Web 页面）
+app.use(express.static('public'));
+
 // =====================================================
 // JWT 认证中间件
 // =====================================================
