@@ -24,54 +24,11 @@ const ROLE_MAP = {
   textToInt: { 'patient': 0, 'doctor': 1, 'admin': 2 }
 };
 
-const { getDb, saveDb } = require('./db/connection');
+const { getDb, saveDb, dbGetOne, dbGetAll } = require('./db/connection');
 const { initDatabase } = require('./db/init');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-// =====================================================
-// sql.js 数据库查询辅助函数
-// =====================================================
-
-/**
- * 查询单条记录
- * 使用 sql.js 的 prepare + bind + step + getAsObject 方式执行查询，返回第一条匹配行。
- * @param {import('sql.js').Database} db - 数据库连接实例
- * @param {string} sql - SQL 查询语句（使用 ? 占位符）
- * @param {Array} params - 参数数组
- * @returns {Object|null} 查询结果对象，无匹配时返回 null
- */
-function dbGetOne(db, sql, params = []) {
-  const stmt = db.prepare(sql);
-  stmt.bind(params);
-  if (stmt.step()) {
-    const row = stmt.getAsObject();
-    stmt.free();
-    return row;
-  }
-  stmt.free();
-  return null;
-}
-
-/**
- * 查询多条记录
- * 使用 sql.js 的 prepare + bind + step 循环方式查询所有匹配行。
- * @param {import('sql.js').Database} db - 数据库连接实例
- * @param {string} sql - SQL 查询语句（使用 ? 占位符）
- * @param {Array} params - 参数数组
- * @returns {Object[]} 查询结果对象数组，无匹配时返回空数组 []
- */
-function dbGetAll(db, sql, params = []) {
-  const stmt = db.prepare(sql);
-  stmt.bind(params);
-  const rows = [];
-  while (stmt.step()) {
-    rows.push(stmt.getAsObject());
-  }
-  stmt.free();
-  return rows;
-}
 
 // =====================================================
 // 中间件配置
