@@ -27,6 +27,7 @@ const MYSQL_CONFIG = {
 let db = null;
 let pool = null;       // MySQL 连接池
 let _SQL = null;       // sql.js 实例
+let _mysqlWrapper = null; // MySQL wrapper（带 .run() 方法）
 
 // ============================================================
 // 统一入口
@@ -70,7 +71,7 @@ function saveSQLite() {
 // MySQL 实现
 // ============================================================
 async function getMySQL() {
-  if (pool) return pool;
+  if (_mysqlWrapper) return _mysqlWrapper;
   const mysql = require('mysql2/promise');
   pool = mysql.createPool({
     ...MYSQL_CONFIG,
@@ -87,7 +88,7 @@ async function getMySQL() {
   // 注意：MySQL 下 db.run() 返回 Promise（需 await），
   // 若不 await，查询会异步执行但错误会被静默忽略。
   // 推荐在 MySQL 模式下全局替换 `db.run(` → `await db.run(`
-  const wrapper = {
+  _mysqlWrapper = {
     run: (sql, params = []) => {
       const p = pool.execute(sql, params);
       p.catch(err => console.error('[MySQL] run() error:', err.message));
@@ -97,7 +98,7 @@ async function getMySQL() {
     getConnection: () => pool.getConnection(),
     pool
   };
-  return wrapper;
+  return _mysqlWrapper;
 }
 
 // ============================================================
