@@ -1,161 +1,368 @@
-/* pages/doctors/doctors.wxss — 医生授权页面样式（主题：indigo 医疗风） */
+/* pages/doctors/doctors.wxss — 医生授权页面样式 */
 
-/* 页面容器 */
 .container {
-  background: #f5f7fa;
-  padding: 16px;
+  padding: 24rpx 28rpx 180rpx;
+  background-color: #f5f7fa;
   min-height: 100vh;
   box-sizing: border-box;
 }
 
-/* 顶部标题 */
-.page-header {
-  margin-bottom: 20px;
-}
-.page-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: #1e293b;
+/* ========== 区域卡片容器 ========== */
+.zone-card {
+  width: 100%;
+  background: #fff;
+  border-radius: 24rpx;
+  box-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.06);
+  padding: 28rpx 28rpx 24rpx;
+  margin-bottom: 16rpx;
+  box-sizing: border-box;
 }
 
-/* 加载 / 空状态 */
+/* ========== 区域头部 ========== */
+.zone-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48rpx;
+  margin-bottom: 20rpx;
+  padding-bottom: 16rpx;
+  border-bottom: 1rpx solid #F1F5F9;
+}
+.zone-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+.zone-dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  background: #4A90D9;
+}
+.zone-dot.granted-dot {
+  background: #10B981;
+}
+.zone-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #1E293B;
+}
+.zone-hint {
+  font-size: 22rpx;
+  color: #B0B7C3;
+}
+.zone-count {
+  font-size: 22rpx;
+  color: #94A3B8;
+  background: #F1F5F9;
+  padding: 4rpx 16rpx;
+  border-radius: 20rpx;
+}
+
+/* ========== 区域内容体 ========== */
+.zone-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  height: 580rpx;
+}
+
+/* ========== 加载 & 空状态 ========== */
 .loading,
 .empty {
   text-align: center;
-  padding: 60px 0;
-  color: #94a3b8;
-  font-size: 14px;
+  color: #B0B7C3;
+  font-size: 26rpx;
+  padding: 48rpx 0;
 }
 
-/* ========== 医生卡片 ========== */
-.doctor-list {
-  flex: 1;
-}
+/* ========== 选择区卡片（竖排，与已授权区一致） ========== */
 .doctor-card {
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-  padding: 16px;
-  margin-bottom: 12px;
   display: flex;
   align-items: center;
+  background: #F8FAFC;
+  border-radius: 16rpx;
+  padding: 24rpx 20rpx;
+  gap: 20rpx;
+  border: 2px solid transparent;
+}
+.doctor-card.selected {
+  border-color: #4A90D9;
+  background: #F0F7FF;
+}
+.doctor-card.selected .card-avatar {
+  background: #DBEAFE;
+}
+
+/* 选中标记 */
+.card-check {
+  flex-shrink: 0;
+}
+.check-circle {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 50%;
+  border: 3px solid #D1D5DB;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  color: #fff;
+  font-weight: 700;
+}
+.check-circle.checked {
+  background: #4A90D9;
+  border-color: #4A90D9;
 }
 
 /* 头像 */
 .card-avatar {
-  width: 48px;
-  height: 48px;
+  width: 72rpx;
+  height: 72rpx;
   border-radius: 50%;
-  background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+  background: #EEF2FF;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
-  margin-right: 14px;
+  font-size: 36rpx;
   flex-shrink: 0;
 }
 
-/* 中间信息区 */
+/* 信息区 */
 .card-info {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+.card-name {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #1E293B;
+}
+.card-phone {
+  font-size: 24rpx;
+  color: #94A3B8;
+}
+
+/* ========== 分页器 ========== */
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20rpx;
+  padding-top: 12rpx;
+}
+.pager-arrow {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #E2E8F0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22rpx;
+  color: #4A90D9;
+  font-weight: 700;
+  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.04);
+  transition: all 0.2s;
+}
+.pager-arrow:active {
+  background: #4A90D9;
+  color: #fff;
+  border-color: #4A90D9;
+  box-shadow: 0 4rpx 12rpx rgba(74,144,217,0.3);
+}
+.pager-arrow.disabled {
+  color: #CBD5E1;
+  border-color: #F1F5F9;
+  background: #F8FAFC;
+  box-shadow: none;
+  pointer-events: none;
+}
+.pager-text {
+  font-size: 26rpx;
+  color: #B0B7C3;
+  font-weight: 600;
+  min-width: 72rpx;
+  text-align: center;
+}
+.pager-curr {
+  color: #4A90D9;
+  font-size: 30rpx;
+  font-weight: 800;
+}
+
+/* ========== 已授权区卡片 ========== */
+.granted-card {
+  display: flex;
+  align-items: center;
+  background: #F8FAFC;
+  border-radius: 16rpx;
+  padding: 24rpx 20rpx;
+  gap: 20rpx;
+}
+
+/* 操作按钮（右端） */
+.card-action {
+  flex-shrink: 0;
+}
+
+/* ========== 底部授权操作栏 ========== */
+.bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  padding: 24rpx 32rpx;
+  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 -4rpx 24rpx rgba(0, 0, 0, 0.08);
+  z-index: 100;
+  transform: translateY(100%);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.bottom-bar.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* 左侧：头像 + 信息 */
+.bar-left {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  flex: 1;
+  min-width: 0;
+}
+.bar-avatar {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: #EEF2FF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+  flex-shrink: 0;
+}
+.bar-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  min-width: 0;
+}
+.bar-label {
+  font-size: 22rpx;
+  color: #94A3B8;
+  font-weight: 500;
+}
+.bar-name {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #1E293B;
+}
+.bar-phone {
+  font-size: 24rpx;
+  color: #94A3B8;
+}
+
+/* 授权按钮 */
+.grant-btn {
+  width: 200rpx;
+  height: 80rpx;
+  background: linear-gradient(135deg, #10B981, #059669);
+  color: #fff;
+  font-size: 30rpx;
+  font-weight: 700;
+  border-radius: 40rpx;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4rpx 16rpx rgba(16, 185, 129, 0.3);
+  flex-shrink: 0;
+}
+.grant-btn[disabled] {
+  background: #CBD5E1;
+  box-shadow: none;
+}
+
+/* ========== 已授权卡片特有元素 ========== */
+.granted-card {
+  position: relative;
+  overflow: hidden;
+}
+/* 左侧状态色条 */
+.granted-card::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 12rpx;
+  bottom: 12rpx;
+  width: 6rpx;
+  border-radius: 0 4rpx 4rpx 0;
+}
+.granted-card.granted-pending::after {
+  background: #F59E0B;
+}
+.granted-card.granted-active::after {
+  background: #10B981;
+}
+/* pending 卡片背景微黄 */
+.granted-card.granted-pending {
+  background: #FFFDF5;
 }
 
 .card-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
+  gap: 14rpx;
+  margin-bottom: 6rpx;
 }
-
-.card-name {
-  font-size: 16px;
-  font-weight: 700;
-  color: #1e293b;
-}
-
 .card-status {
-  font-size: 11px;
-  padding: 2px 8px;
-  border-radius: 10px;
-  line-height: 1.4;
+  font-size: 20rpx;
+  font-weight: 700;
+  padding: 4rpx 14rpx;
+  border-radius: 20rpx;
 }
 .card-status.pending {
-  background: #fef3c7;
-  color: #b45309;
+  background: #FEF3C7;
+  color: #B45309;
 }
 .card-status.active {
-  background: #dcfce7;
-  color: #166534;
+  background: #D1FAE5;
+  color: #065F46;
 }
 
-.card-phone {
-  font-size: 13px;
-  color: #64748b;
-  margin-bottom: 2px;
-}
-
-.card-expire {
-  font-size: 12px;
-  color: #94a3b8;
-}
-
-/* 右侧操作区 */
-.card-action {
-  flex-shrink: 0;
-  margin-left: 12px;
+/* 手机号 & 到期时间合并一行 */
+.card-meta {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
+  align-items: center;
+  gap: 8rpx;
+  font-size: 24rpx;
+  color: #94A3B8;
+}
+.card-divider-dot {
+  color: #D1D5DB;
 }
 
 .revoke-btn {
-  color: #ef4444;
-  font-size: 13px;
-  background: #fff;
-  border: 1px solid #fecaca;
-  border-radius: 6px;
-  padding: 6px 14px;
-  line-height: 1.2;
-}
-
-/* ========== 底部添加区域 ========== */
-.add-section {
-  margin-top: 16px;
-}
-
-.add-row {
+  width: 120rpx;
+  height: 56rpx;
+  font-size: 24rpx;
+  color: #EF4444;
+  background: #FEF2F2;
+  border: 2px solid #FECACA;
+  border-radius: 28rpx;
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-
-.phone-input {
-  flex: 1;
-  height: 44px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 0 12px;
-  font-size: 14px;
-  background: #fff;
-}
-
-.add-btn {
-  width: 80px;
-  height: 44px;
-  line-height: 44px;
-  background: linear-gradient(135deg, #4f46e5, #6366f1);
-  color: #fff;
-  font-size: 14px;
-  font-weight: 600;
-  border-radius: 8px;
-  padding: 0;
-  text-align: center;
-  border: none;
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-}
-
-.add-btn[disabled] {
-  opacity: 0.5;
+  justify-content: center;
+  line-height: 1;
 }

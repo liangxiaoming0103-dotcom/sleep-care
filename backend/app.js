@@ -1076,22 +1076,38 @@ app.put('/api/setting/plan', authenticateToken, async (req, res) => {
 /**
  * 患者授权医生
  * POST /api/doctor/grant
- * @param {string} doctor_phone - 医生手机号
+ * 支持两种传参：优先 doctor_id（数字），其次 doctor_phone（字符串）
+ * @param {number} [doctor_id]  - 医生ID
+ * @param {string} [doctor_phone] - 医生手机号
  * @returns {{code: number, message: string, data: object|null}}
  */
 app.post('/api/doctor/grant', authenticateToken, async (req, res) => {
   const patientId = req.user.id;
-  const { doctor_phone } = req.body;
+  const doctorId = parseInt(req.body.doctor_id, 10);
+  const doctorPhone = req.body.doctor_phone;
 
-  // ---- 1. 查找医生（DB 中 role 为 INTEGER：1=doctor） ----
   const db = await getDb();
-  const doctor = dbGetOne(
-    db,
-    'SELECT id, nickname FROM users WHERE phone = ? AND role = 1',
-    [doctor_phone]
-  );
+  let doctor = null;
+
+  // ---- 1. 优先按 doctor_id 查，其次按 doctor_phone 查 ----
+  if (doctorId && !isNaN(doctorId)) {
+    doctor = dbGetOne(
+      db,
+      "SELECT id, nickname FROM users WHERE id = ? AND role = 'doctor'",
+      [doctorId]
+    );
+  } else if (doctorPhone) {
+    doctor = dbGetOne(
+      db,
+      "SELECT id, nickname FROM users WHERE phone = ? AND role = 'doctor'",
+      [doctorPhone]
+    );
+  } else {
+    return res.json({ code: 1001, message: '请指定医生', data: null });
+  }
+
   if (!doctor) {
-    return res.json({ code: 1001, message: '该手机号不是医生', data: null });
+    return res.json({ code: 1001, message: '该医生不存在', data: null });
   }
 
   // ---- 2. 检查是否已授权（pending 或 active） ----

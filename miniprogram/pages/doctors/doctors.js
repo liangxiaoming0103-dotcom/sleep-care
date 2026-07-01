@@ -4,38 +4,45 @@ const BASE_URL = app.globalData.apiBase || 'http://127.0.0.1:3000';
 
 Page({
   data: {
-    list: [],           // 已授权医生列表
-    doctorPhone: '',    // 输入框中的手机号
-    loading: false,     // 加载状态
-    adding: false       // 添加中状态
+    doctorList: [],        // 所有医生列表
+    authList: [],          // 已授权医生列表
+    selectedDoctorId: null,  // 当前选中的医生 ID
+    selectedDoctorName: '',  // 当前选中的医生姓名
+    selectedDoctorPhone: '', // 当前选中的医生手机号
+    loading: false,        // 加载中
+    adding: false,         // 授权中
+    // 分页
+    pageSize: 4,
+    currentPage: 0,
+    totalPages: 0,
+    pageDoctors: []        // 当前页显示的医生
   },
 
   onShow() {
-    this.loadList();
+    this.loadDoctors();
+    this.loadAuthList();
   },
 
-  // ========== 加载列表 ==========
-  loadList() {
-    const token = app.getToken();
-    if (!token) {
-      wx.redirectTo({ url: '/pages/login/login' });
-      return;
-    }
-
+  // ========== 加载所有医生 ==========
+  loadDoctors() {
     this.setData({ loading: true });
     wx.request({
-      url: `${BASE_URL}/api/doctor/granted`,
+      url: `${BASE_URL}/api/users/doctors`,
       method: 'GET',
-      header: { Authorization: `Bearer ${token}` },
       success: (res) => {
         if (res.data.code === 0) {
-          this.setData({ list: res.data.data || [] });
-        } else {
-          wx.showToast({ title: '加载失败', icon: 'none' });
+          const list = res.data.data || [];
+          const totalPages = Math.ceil(list.length / this.data.pageSize);
+          this.setData({
+            doctorList: list,
+            totalPages: totalPages,
+            currentPage: 0
+          });
+          this.updatePage();
         }
       },
       fail: () => {
-        wx.showToast({ title: '网络请求失败', icon: 'none' });
+        wx.showToast({ title: '加载医生列表失败', icon: 'none' });
       },
       complete: () => {
         this.setData({ loading: false });
@@ -43,15 +50,73 @@ Page({
     });
   },
 
-  // ========== 添加医生 ==========
-  handleAdd() {
-    const phone = this.data.doctorPhone.trim();
-    if (!phone) {
-      wx.showToast({ title: '请输入医生手机号', icon: 'none' });
+  // ========== 加载已授权列表 ==========
+  loadAuthList() {
+    const token = app.getToken();
+    if (!token) {
+      wx.redirectTo({ url: '/pages/login/login' });
       return;
     }
-    if (!/^\d{11}$/.test(phone)) {
-      wx.showToast({ title: '手机号格式错误', icon: 'none' });
+
+    wx.request({
+      url: `${BASE_URL}/api/doctor/granted`,
+      method: 'GET',
+      header: { Authorization: `Bearer ${token}` },
+      success: (res) => {
+        if (res.data.code === 0) {
+          this.setData({ authList: res.data.data || [] });
+        }
+      },
+      fail: () => {
+        wx.showToast({ title: '网络请求失败', icon: 'none' });
+      }
+    });
+  },
+
+  // ========== 点击选中/取消医生 ==========
+  selectDoctor(e) {
+    const id = e.currentTarget.dataset.id;
+    const { doctorList, selectedDoctorId } = this.data;
+
+    // 点击已选中的 → 取消选中
+    if (selectedDoctorId === id) {
+      this.setData({ selectedDoctorId: null, selectedDoctorName: '', selectedDoctorPhone: '' });
+      return;
+    }
+
+    // 选中新医生
+    const doctor = doctorList.find(d => d.id === id);
+    this.setData({
+      selectedDoctorId: id,
+      selectedDoctorName: doctor ? (doctor.nickname || '医生') : '',
+      selectedDoctorPhone: doctor ? (doctor.phone || '') : ''
+    });
+  },
+
+  // ========== 分页 ==========
+  updatePage() {
+    const { doctorList, currentPage, pageSize } = this.data;
+    const start = currentPage * pageSize;
+    this.setData({ pageDoctors: doctorList.slice(start, start + pageSize) });
+  },
+
+  onPrevPage() {
+    if (this.data.currentPage <= 0) return;
+    this.setData({ currentPage: this.data.currentPage - 1 });
+    this.updatePage();
+  },
+
+  onNextPage() {
+    if (this.data.currentPage >= this.data.totalPages - 1) return;
+    this.setData({ currentPage: this.data.currentPage + 1 });
+    this.updatePage();
+  },
+
+  // ========== 授权医生 ==========
+  handleAdd() {
+    const { selectedDoctorId } = this.data;
+    if (!selectedDoctorId) {
+      wx.showToast({ title: '请先选择医生', icon: 'none' });
       return;
     }
 
@@ -64,12 +129,12 @@ Page({
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`
       },
-      data: { doctor_phone: phone },
+      data: { doctor_id: selectedDoctorId },
       success: (res) => {
         if (res.data.code === 0) {
           wx.showToast({ title: '授权成功', icon: 'success' });
-          this.setData({ doctorPhone: '' });
-          this.loadList();
+          this.setData({ selectedDoctorId: null, selectedDoctorName: '', selectedDoctorPhone: '' });
+          this.loadAuthList();
         } else {
           wx.showToast({ title: res.data.message || '授权失败', icon: 'none' });
         }
@@ -105,7 +170,7 @@ Page({
           success: (res) => {
             if (res.data.code === 0) {
               wx.showToast({ title: '撤销成功', icon: 'success' });
-              this.loadList();
+              this.loadAuthList();
             } else {
               wx.showToast({ title: res.data.message || '撤销失败', icon: 'none' });
             }
@@ -116,10 +181,5 @@ Page({
         });
       }
     });
-  },
-
-  // ========== 输入事件 ==========
-  onPhoneInput(e) {
-    this.setData({ doctorPhone: e.detail.value });
   }
 });
