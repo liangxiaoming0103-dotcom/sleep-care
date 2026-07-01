@@ -288,6 +288,18 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+// GET /api/users/doctors —— 获取所有已注册的医生列表（公开接口）
+app.get('/api/users/doctors', async (req, res) => {
+  const db = await getDb();
+  const doctors = dbGetAll(db,
+    `SELECT id, phone, nickname FROM users
+     WHERE role = 'doctor' AND status = 1
+     ORDER BY id ASC`,
+    []
+  );
+  return res.json({ code: 0, message: 'success', data: doctors });
+});
+
 // =====================================================
 // 设备管理接口（均需登录）
 // =====================================================
@@ -969,6 +981,23 @@ async function start() {
     // 1. 初始化数据库（建表 + 索引）
     console.log('[App] 正在初始化数据库...');
     await initDatabase();
+
+    // 1.5 自动迁移：将 role 字段 INTEGER → TEXT（幂等安全）
+    const db = await getDb();
+    const roleMap = { 0: 'patient', 1: 'doctor', 2: 'admin' };
+    const stmt = db.prepare("SELECT id, role FROM users WHERE typeof(role) = 'integer'");
+    const legacyRows = [];
+    while (stmt.step()) legacyRows.push(stmt.getAsObject());
+    stmt.free();
+    if (legacyRows.length > 0) {
+      console.log(`[App] 检测到 ${legacyRows.length} 条旧格式 role，正在迁移…`);
+      for (const row of legacyRows) {
+        const newRole = roleMap[row.role] || 'patient';
+        db.run('UPDATE users SET role = ? WHERE id = ?', [newRole, row.id]);
+      }
+      saveDb();
+      console.log('[App] role 迁移完成');
+    }
 
     // 2. 启动 HTTP 服务
     app.listen(PORT, () => {
