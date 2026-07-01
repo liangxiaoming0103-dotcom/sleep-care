@@ -249,8 +249,8 @@ app.post('/api/auth/login', async (req, res) => {
       }
     });
   } catch (err) {
-    console.error('[登录] 服务器错误：', err);
-    res.status(500).json({ code: 5001, message: '服务器内部错误', data: null });
+    console.error('[登录] 服务器错误：', err.message, err.stack);
+    return res.status(500).json({ code: 5001, message: '服务器内部错误: ' + err.message, data: null });
   }
 });
 
