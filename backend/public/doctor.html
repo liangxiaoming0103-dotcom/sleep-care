@@ -202,6 +202,16 @@
       min-height: 18px; margin: 6px 0 2px;
     }
 
+    /* 登录/注册切换链接 */
+    .switch-link {
+      text-align: center; margin-top: 20px; font-size: 13px; color: var(--slate-400);
+    }
+    .switch-link a {
+      color: var(--blue-600); font-weight: 700; cursor: pointer; text-decoration: none;
+      transition: color var(--transition);
+    }
+    .switch-link a:hover { color: var(--blue-700); }
+
     /* ============================================================
        顶部导航
        ============================================================ */
@@ -509,6 +519,53 @@
       </div>
       <div class="error-msg" id="login-error"></div>
       <button class="btn btn-primary" id="login-btn" onclick="handleLogin()">登 录</button>
+      <div class="switch-link">
+        还没有账号？<a onclick="showRegister()">去注册</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 注册视图 ==================== -->
+<div class="view" id="register-view">
+  <div class="login-view-wrapper">
+    <div class="login-card">
+      <div class="login-icon">👨‍⚕️</div>
+      <div class="login-title">医生注册</div>
+      <div class="login-subtitle">创建您的医生账号</div>
+      <div class="form-group">
+        <label>姓名</label>
+        <div class="input-wrap">
+          <span class="input-icon">👤</span>
+          <input type="text" id="reg-nickname" placeholder="请输入您的姓名" autocomplete="name">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>手机号</label>
+        <div class="input-wrap">
+          <span class="input-icon">📱</span>
+          <input type="tel" id="reg-phone" placeholder="请输入11位手机号" maxlength="11" autocomplete="tel">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>密码</label>
+        <div class="input-wrap">
+          <span class="input-icon">🔒</span>
+          <input type="password" id="reg-password" placeholder="请输入密码（至少6位）" autocomplete="new-password">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>确认密码</label>
+        <div class="input-wrap">
+          <span class="input-icon">🔒</span>
+          <input type="password" id="reg-password2" placeholder="请再次输入密码" autocomplete="new-password">
+        </div>
+      </div>
+      <div class="error-msg" id="register-error"></div>
+      <button class="btn btn-primary" id="register-btn" onclick="handleRegister()">注 册</button>
+      <div class="switch-link">
+        已有账号？<a onclick="showLogin()">返回登录</a>
+      </div>
     </div>
   </div>
 </div>
@@ -672,6 +729,82 @@ function handleLogout() {
   document.getElementById('password').value = '';
   document.getElementById('login-error').textContent = '';
   switchView('login');
+}
+
+/** 切换到注册视图 */
+function showRegister() {
+  // 清空注册表单
+  document.getElementById('reg-nickname').value = '';
+  document.getElementById('reg-phone').value = '';
+  document.getElementById('reg-password').value = '';
+  document.getElementById('reg-password2').value = '';
+  document.getElementById('register-error').textContent = '';
+  switchView('register');
+}
+
+/** 从注册视图返回登录 */
+function showLogin() {
+  document.getElementById('login-error').textContent = '';
+  switchView('login');
+}
+
+/** 处理医生注册 */
+async function handleRegister() {
+  const nickname = document.getElementById('reg-nickname').value.trim();
+  const phone    = document.getElementById('reg-phone').value.trim();
+  const password = document.getElementById('reg-password').value;
+  const password2 = document.getElementById('reg-password2').value;
+  const errorEl  = document.getElementById('register-error');
+  const btn      = document.getElementById('register-btn');
+
+  // 基本校验
+  if (!nickname) {
+    errorEl.textContent = '请输入您的姓名'; return;
+  }
+  if (!phone || !/^\d{11}$/.test(phone)) {
+    errorEl.textContent = '请输入正确的 11 位手机号'; return;
+  }
+  if (!password || password.length < 6) {
+    errorEl.textContent = '密码长度不能少于 6 位'; return;
+  }
+  if (password !== password2) {
+    errorEl.textContent = '两次密码输入不一致'; return;
+  }
+  errorEl.textContent = '';
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="width:20px;height:20px;border-width:2px;border-top-color:#fff"></span> 注册中…';
+
+  try {
+    const res = await fetch(API_BASE + '/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        phone: phone,
+        password: password,
+        nickname: nickname,
+        role: 'doctor'
+      })
+    });
+    const json = await res.json();
+
+    if (json.code === 0) {
+      showToast('注册成功，请登录', 'success');
+      // 切回登录视图并自动填充手机号
+      document.getElementById('phone').value = phone;
+      document.getElementById('password').value = '';
+      document.getElementById('login-error').textContent = '';
+      switchView('login');
+    } else {
+      errorEl.textContent = json.message || '注册失败';
+    }
+  } catch (err) {
+    errorEl.textContent = '网络错误，请确认服务已启动';
+    console.error('[Register]', err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '注 册';
+  }
 }
 
 // =====================================================
