@@ -44,8 +44,14 @@ Page({
   onLoad() {
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
-    this.setData({ selectedDate: now.toISOString().split('T')[0], todayStr });
-    this.syncDateUI();
+    const selectedDate = now.toISOString().split('T')[0];
+    const d = new Date(selectedDate);
+    this.setData({
+      selectedDate, todayStr,
+      dateDisplay: `${d.getMonth()+1}月${d.getDate()}日`,
+      dateWeekday: WEEK[d.getDay()],
+      isToday: true
+    });
     this.loadStages();
     this.loadNoise();
     this.loadTrend();
@@ -53,19 +59,15 @@ Page({
     this.loadDoctorNote();
   },
 
-  syncDateUI() {
-    const d = new Date(this.data.selectedDate);
-    const today = this.data.todayStr;
+  onDateChange(e) {
+    const selectedDate = e.detail.value;
+    const d = new Date(selectedDate);
     this.setData({
+      selectedDate,
       dateDisplay: `${d.getMonth()+1}月${d.getDate()}日`,
       dateWeekday: WEEK[d.getDay()],
-      isToday: this.data.selectedDate === today
+      isToday: selectedDate === this.data.todayStr
     });
-  },
-
-  onDateChange(e) {
-    this.setData({ selectedDate: e.detail.value });
-    this.syncDateUI();
     this.loadStages();
     this.loadNoise();
     this.loadTrend();
@@ -75,8 +77,13 @@ Page({
   onPrevDay() {
     const d = new Date(this.data.selectedDate);
     d.setDate(d.getDate() - 1);
-    this.setData({ selectedDate: d.toISOString().split('T')[0] });
-    this.syncDateUI();
+    const selectedDate = d.toISOString().split('T')[0];
+    this.setData({
+      selectedDate,
+      dateDisplay: `${d.getMonth()+1}月${d.getDate()}日`,
+      dateWeekday: WEEK[d.getDay()],
+      isToday: selectedDate === this.data.todayStr
+    });
     this.loadStages();
     this.loadNoise();
     this.loadTrend();
@@ -87,8 +94,13 @@ Page({
     if (this.data.isToday) return;
     const d = new Date(this.data.selectedDate);
     d.setDate(d.getDate() + 1);
-    this.setData({ selectedDate: d.toISOString().split('T')[0] });
-    this.syncDateUI();
+    const selectedDate = d.toISOString().split('T')[0];
+    this.setData({
+      selectedDate,
+      dateDisplay: `${d.getMonth()+1}月${d.getDate()}日`,
+      dateWeekday: WEEK[d.getDay()],
+      isToday: selectedDate === this.data.todayStr
+    });
     this.loadStages();
     this.loadNoise();
     this.loadTrend();

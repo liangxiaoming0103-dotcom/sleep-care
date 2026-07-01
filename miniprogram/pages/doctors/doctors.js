@@ -43,9 +43,9 @@ Page({
           this.setData({
             doctorList: list,
             totalPages: totalPages,
-            currentPage: 0
+            currentPage: 0,
+            pageDoctors: list.slice(0, this.data.pageSize)
           });
-          this.updatePage();
         }
       },
       fail: () => {
@@ -101,22 +101,22 @@ Page({
   },
 
   // ========== 分页 ==========
-  updatePage() {
-    const { doctorList, currentPage, pageSize } = this.data;
-    const start = currentPage * pageSize;
-    this.setData({ pageDoctors: doctorList.slice(start, start + pageSize) });
+  getPageData(page) {
+    const { doctorList, pageSize } = this.data;
+    const start = page * pageSize;
+    return { pageDoctors: doctorList.slice(start, start + pageSize) };
   },
 
   onPrevPage() {
     if (this.data.currentPage <= 0) return;
-    this.setData({ currentPage: this.data.currentPage - 1 });
-    this.updatePage();
+    const page = this.data.currentPage - 1;
+    this.setData({ currentPage: page, ...this.getPageData(page) });
   },
 
   onNextPage() {
     if (this.data.currentPage >= this.data.totalPages - 1) return;
-    this.setData({ currentPage: this.data.currentPage + 1 });
-    this.updatePage();
+    const page = this.data.currentPage + 1;
+    this.setData({ currentPage: page, ...this.getPageData(page) });
   },
 
   // ========== 授权医生 ==========

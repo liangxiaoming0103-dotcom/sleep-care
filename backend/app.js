@@ -1705,5 +1705,17 @@ app.get('/api/patient/note/check', authenticateToken, async (req, res) => {
   }});
 });
 
+// =====================================================
+// 统一错误处理中间件（必须放在所有路由之后）
+// =====================================================
+app.use((err, req, res, next) => {
+  console.error('[Error]', err.stack || err.message || err);
+  res.status(500).json({
+    code: 500,
+    message: '服务器内部错误',
+    data: null
+  });
+});
+
 // 启动服务
 start();

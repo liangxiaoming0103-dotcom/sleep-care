@@ -133,13 +133,12 @@ async function initSchema() {
   // =====================================================
   // 索引（提升查询性能）
   // =====================================================
-  db.run('CREATE INDEX IF NOT EXISTS idx_devices_user_id    ON devices(user_id);');
-  db.run('CREATE INDEX IF NOT EXISTS idx_reports_user_date   ON sleep_reports(user_id, report_date);');
-  db.run('CREATE INDEX IF NOT EXISTS idx_reports_device_id   ON sleep_reports(device_id);');
-  db.run('CREATE INDEX IF NOT EXISTS idx_auth_patient        ON doctor_authorizations(patient_id);');
-  db.run('CREATE INDEX IF NOT EXISTS idx_auth_doctor         ON doctor_authorizations(doctor_id);');
-  db.run('CREATE INDEX IF NOT EXISTS idx_auth_status         ON doctor_authorizations(status);');
-  console.log('[Schema] ✓ 6 个索引');
+  db.run('CREATE INDEX IF NOT EXISTS idx_sleep_reports_user_id     ON sleep_reports(user_id)');
+  db.run('CREATE INDEX IF NOT EXISTS idx_sleep_reports_report_date ON sleep_reports(report_date)');
+  db.run('CREATE INDEX IF NOT EXISTS idx_devices_user_id           ON devices(user_id)');
+  db.run('CREATE INDEX IF NOT EXISTS idx_doctor_auth_doctor_id     ON doctor_authorizations(doctor_id)');
+  db.run('CREATE INDEX IF NOT EXISTS idx_doctor_auth_patient_id    ON doctor_authorizations(patient_id)');
+  console.log('[Schema] ✓ 5 个索引');
 
   // 持久化到磁盘
   saveDb();
