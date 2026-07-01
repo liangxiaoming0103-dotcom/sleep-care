@@ -55,7 +55,7 @@ Page({
 
     // ---- b/c/d. 调用 wx.request 发送 POST 登录请求 ----
     wx.request({
-      url: 'http://localhost:3000/api/auth/login',
+      url: 'http://127.0.0.1:3000/api/auth/login',
       method: 'POST',
       header: { 'Content-Type': 'application/json' },
       data: { phone: phone.trim(), password },

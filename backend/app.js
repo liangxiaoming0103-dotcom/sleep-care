@@ -288,6 +288,56 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+// GET /api/user/profile —— 获取个人信息
+app.get('/api/user/profile', authenticateToken, async (req, res) => {
+  const db = await getDb();
+  const user = dbGetOne(db,
+    'SELECT id, phone, nickname, gender, birth_year, role FROM users WHERE id = ?',
+    [req.user.id]
+  );
+  if (!user) return res.json({ code: 2001, message: '用户不存在', data: null });
+  return res.json({ code: 0, message: 'success', data: user });
+});
+
+// PUT /api/user/profile —— 更新个人信息（昵称、性别、出生年份）
+app.put('/api/user/profile', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
+  const { nickname, gender, birth_year } = req.body;
+  const db = await getDb();
+
+  // 构建动态 SET 子句
+  const sets = [];
+  const params = [];
+  if (nickname !== undefined)  { sets.push('nickname = ?'); params.push(nickname); }
+  if (gender !== undefined)   { sets.push('gender = ?');   params.push(parseInt(gender) || 0); }
+  if (birth_year !== undefined) { sets.push('birth_year = ?'); params.push(parseInt(birth_year) || null); }
+
+  if (sets.length === 0) {
+    return res.json({ code: 1001, message: '请提供要修改的字段', data: null });
+  }
+
+  const now = new Date().toISOString();
+  sets.push('updated_at = ?');
+  params.push(now);
+  params.push(userId);
+
+  db.run(`UPDATE users SET ${sets.join(', ')} WHERE id = ?`, params);
+  saveDb();
+
+  // 返回更新后的信息
+  const user = dbGetOne(db,
+    'SELECT id, phone, nickname, gender, birth_year, role FROM users WHERE id = ?',
+    [userId]
+  );
+  if (user) {
+    user.role = (typeof user.role === 'number')
+      ? (ROLE_MAP.intToText[user.role] || 'patient')
+      : (user.role || 'patient');
+  }
+
+  return res.json({ code: 0, message: '保存成功', data: user });
+});
+
 // GET /api/users/doctors —— 获取所有已注册的医生列表（公开接口）
 app.get('/api/users/doctors', async (req, res) => {
   const db = await getDb();
@@ -843,6 +893,207 @@ app.get('/api/sleep/noise', authenticateToken, async (req, res) => {
   }
 
   res.json({ code: 0, message: 'success', data: { date: dateStr, noise: newNoise, labels } });
+});
+
+// =====================================================
+// 获取心率数据 GET /api/sleep/heart
+// =====================================================
+app.get('/api/sleep/heart', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
+  let dateStr = req.query.date;
+  if (!dateStr) {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    dateStr = yesterday.toISOString().split('T')[0];
+  }
+  const db = await getDb();
+  let deviceId = 0;
+  const deviceRow = dbGetOne(db, 'SELECT id FROM devices WHERE user_id = ? LIMIT 1', [userId]);
+  if (deviceRow) deviceId = deviceRow.id;
+
+  // 1. 查询或创建报告
+  let report = dbGetOne(db,
+    'SELECT * FROM sleep_reports WHERE user_id = ? AND device_id = ? AND report_date = ?',
+    [userId, deviceId, dateStr]
+  );
+  if (!report) {
+    const seedKey = `${userId}_${deviceId}_${dateStr}`;
+    const rand = seededRandom(seedKey);
+    const { totalSleep, deepSleep, remSleep, lightSleep, sleepScore, awakeCount, awakeMinutes } = generateBaseMetrics(rand);
+    try {
+      db.run(
+        `INSERT INTO sleep_reports
+          (user_id, device_id, report_date, sleep_score, total_sleep_minutes,
+           deep_sleep_minutes, light_sleep_minutes, rem_sleep_minutes,
+           awake_minutes, awake_count, heart_rate_json, sleep_stages_json, noise_json)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [userId, deviceId, dateStr, sleepScore, totalSleep,
+         deepSleep, lightSleep, remSleep,
+         awakeMinutes, awakeCount, '[]', '[]', '[]']
+      );
+      saveDb();
+      report = dbGetOne(db,
+        'SELECT * FROM sleep_reports WHERE user_id = ? AND device_id = ? AND report_date = ?',
+        [userId, deviceId, dateStr]
+      );
+    } catch (err) {
+      report = dbGetOne(db,
+        'SELECT * FROM sleep_reports WHERE user_id=? AND device_id=? AND report_date=?',
+        [userId, deviceId, dateStr]);
+      if (!report) return res.json({ code: 1001, message: '生成报告失败' });
+    }
+  }
+
+  // 2. 检查 heart_rate_json，若无则懒加载生成
+  let heartData = [];
+  let labels = [];
+  if (report.heart_rate_json) {
+    try {
+      const parsed = JSON.parse(report.heart_rate_json);
+      if (Array.isArray(parsed) && parsed.length === 96) {
+        heartData = parsed;
+        for (let i = 0; i < 96; i++) {
+          const hour = Math.floor(i / 12) + 22;
+          const displayHour = hour >= 24 ? hour - 24 : hour;
+          const minute = (i % 12) * 5;
+          labels.push(`${String(displayHour).padStart(2,'0')}:${String(minute).padStart(2,'0')}`);
+        }
+        return res.json({ code: 0, message: 'success', data: { date: dateStr, heartRate: heartData, labels } });
+      }
+    } catch (e) { /* 重新生成 */ }
+  }
+
+  // 3. 生成心率数据（96 个点，22:00-06:00，每5分钟）
+  const seedKey = `${userId}_${deviceId}_${dateStr}`;
+  const rand = seededRandom(seedKey);
+  const POINTS = 96;
+  const newHeart = [];
+  for (let i = 0; i < POINTS; i++) {
+    // 睡眠阶段调整心率：深睡偏低(55-65)，浅睡/REM偏高(65-75)
+    const pos = i / POINTS;
+    let baseBpm;
+    if (pos < 0.3) { baseBpm = 62 + rand() * 12; }       // 前半段：入睡期，逐渐降低
+    else if (pos < 0.6) { baseBpm = 56 + rand() * 8; }   // 中段：深睡，心率最低
+    else { baseBpm = 60 + rand() * 14; }                   // 后段：REM为主，心率波动大
+    newHeart.push(parseFloat(baseBpm.toFixed(1)));
+  }
+
+  // 4. 更新数据库
+  db.run('UPDATE sleep_reports SET heart_rate_json = ? WHERE id = ?',
+    [JSON.stringify(newHeart), report.id]);
+  saveDb();
+
+  // 5. 生成标签
+  for (let i = 0; i < POINTS; i++) {
+    const hour = Math.floor(i / 12) + 22;
+    const displayHour = hour >= 24 ? hour - 24 : hour;
+    const minute = (i % 12) * 5;
+    labels.push(`${String(displayHour).padStart(2,'0')}:${String(minute).padStart(2,'0')}`);
+  }
+
+  res.json({ code: 0, message: 'success', data: { date: dateStr, heartRate: newHeart, labels } });
+});
+
+// =====================================================
+// 获取呼吸频率数据 GET /api/sleep/breath
+// =====================================================
+app.get('/api/sleep/breath', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
+  let dateStr = req.query.date;
+  if (!dateStr) {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    dateStr = yesterday.toISOString().split('T')[0];
+  }
+  const db = await getDb();
+  let deviceId = 0;
+  const deviceRow = dbGetOne(db, 'SELECT id FROM devices WHERE user_id = ? LIMIT 1', [userId]);
+  if (deviceRow) deviceId = deviceRow.id;
+
+  // 1. 查询或创建报告
+  let report = dbGetOne(db,
+    'SELECT * FROM sleep_reports WHERE user_id = ? AND device_id = ? AND report_date = ?',
+    [userId, deviceId, dateStr]
+  );
+  if (!report) {
+    const seedKey = `${userId}_${deviceId}_${dateStr}`;
+    const rand = seededRandom(seedKey);
+    const { totalSleep, deepSleep, remSleep, lightSleep, sleepScore, awakeCount, awakeMinutes } = generateBaseMetrics(rand);
+    try {
+      db.run(
+        `INSERT INTO sleep_reports
+          (user_id, device_id, report_date, sleep_score, total_sleep_minutes,
+           deep_sleep_minutes, light_sleep_minutes, rem_sleep_minutes,
+           awake_minutes, awake_count, heart_rate_json, sleep_stages_json, noise_json)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [userId, deviceId, dateStr, sleepScore, totalSleep,
+         deepSleep, lightSleep, remSleep,
+         awakeMinutes, awakeCount, '[]', '[]', '[]']
+      );
+      saveDb();
+      report = dbGetOne(db,
+        'SELECT * FROM sleep_reports WHERE user_id = ? AND device_id = ? AND report_date = ?',
+        [userId, deviceId, dateStr]
+      );
+    } catch (err) {
+      report = dbGetOne(db,
+        'SELECT * FROM sleep_reports WHERE user_id=? AND device_id=? AND report_date=?',
+        [userId, deviceId, dateStr]);
+      if (!report) return res.json({ code: 1001, message: '生成报告失败' });
+    }
+  }
+
+  // 2. 检查 breath_rate_json，若无则懒加载生成
+  let breathData = [];
+  let labels = [];
+  if (report.breath_rate_json) {
+    try {
+      const parsed = JSON.parse(report.breath_rate_json);
+      if (Array.isArray(parsed) && parsed.length === 96) {
+        breathData = parsed;
+        for (let i = 0; i < 96; i++) {
+          const hour = Math.floor(i / 12) + 22;
+          const displayHour = hour >= 24 ? hour - 24 : hour;
+          const minute = (i % 12) * 5;
+          labels.push(`${String(displayHour).padStart(2,'0')}:${String(minute).padStart(2,'0')}`);
+        }
+        return res.json({ code: 0, message: 'success', data: { date: dateStr, breathRate: breathData, labels } });
+      }
+    } catch (e) { /* 重新生成 */ }
+  }
+
+  // 3. 生成呼吸频率数据（96 个点，22:00-06:00，每5分钟）
+  const seedKey = `${userId}_${deviceId}_${dateStr}_breath`;
+  const rand = seededRandom(seedKey);
+  const POINTS = 96;
+  const newBreath = [];
+  for (let i = 0; i < POINTS; i++) {
+    const pos = i / POINTS;
+    let baseBr;
+    if (pos < 0.3) { baseBr = 14 + rand() * 4; }        // 入睡期
+    else if (pos < 0.6) { baseBr = 12 + rand() * 3; }   // 深睡期：呼吸最慢
+    else { baseBr = 13 + rand() * 5; }                    // REM期：波动大
+    newBreath.push(parseFloat(baseBr.toFixed(1)));
+  }
+
+  // 4. 更新数据库（复用 breath_rate_json 字段，若不存在则动态添加）
+  // 注意：schema 中未定义该列，使用 ALTER TABLE 兼容
+  try {
+    db.run('ALTER TABLE sleep_reports ADD COLUMN breath_rate_json TEXT');
+  } catch (_) { /* 列已存在 */ }
+  db.run('UPDATE sleep_reports SET breath_rate_json = ? WHERE id = ?',
+    [JSON.stringify(newBreath), report.id]);
+  saveDb();
+
+  // 5. 生成标签
+  for (let i = 0; i < POINTS; i++) {
+    const hour = Math.floor(i / 12) + 22;
+    const displayHour = hour >= 24 ? hour - 24 : hour;
+    const minute = (i % 12) * 5;
+    labels.push(`${String(displayHour).padStart(2,'0')}:${String(minute).padStart(2,'0')}`);
+  }
+
+  res.json({ code: 0, message: 'success', data: { date: dateStr, breathRate: newBreath, labels } });
 });
 
 // =====================================================
@@ -1420,6 +1671,38 @@ app.get('/api/doctor/note', authenticateToken, async (req, res) => {
   }
 
   return res.json({ code: 0, message: 'success', data: { doctor_note: row.doctor_note || '' } });
+});
+
+// GET /api/patient/note/check —— 患者检查医生干预建议
+app.get('/api/patient/note/check', authenticateToken, async (req, res) => {
+  const patientId = req.user.id;
+  const db = await getDb();
+
+  const row = dbGetOne(db, `
+    SELECT a.doctor_note, a.updated_at, u.nickname AS doctor_name
+    FROM doctor_authorizations a
+    JOIN users u ON a.doctor_id = u.id
+    WHERE a.patient_id = ?
+      AND a.status = 'active'
+      AND a.expire_date >= date('now')
+      AND a.doctor_note IS NOT NULL
+      AND a.doctor_note != ''
+    ORDER BY a.updated_at DESC
+    LIMIT 1
+  `, [patientId]);
+
+  if (!row) {
+    return res.json({ code: 0, message: 'success', data: {
+      has_note: false, doctor_name: null, doctor_note: null, updated_at: null
+    }});
+  }
+
+  return res.json({ code: 0, message: 'success', data: {
+    has_note: true,
+    doctor_name: row.doctor_name,
+    doctor_note: row.doctor_note,
+    updated_at: row.updated_at
+  }});
 });
 
 // 启动服务

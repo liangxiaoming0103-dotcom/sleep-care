@@ -1,12 +1,13 @@
 // pages/home/home.js
 // 首页逻辑：获取昨日睡眠报告并展示
 
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = 'http://127.0.0.1:3000';
 
 Page({
   data: {
     sleepData: null,
-    loading: true
+    loading: true,
+    hasNewNote: false
   },
 
   onLoad() {
@@ -15,6 +16,7 @@ Page({
 
   onShow() {
     this.loadReport();
+    this.checkDoctorNote();
   },
 
   loadReport() {
@@ -57,12 +59,33 @@ Page({
 
   /** 跳转到睡眠分期详细页 */
   goToReport() {
-    wx.navigateTo({ url: '/pages/report/report' });
+    wx.switchTab({ url: '/pages/report/report' });
   },
 
   /** 跳转到作息设置页 */
   goToSettings() {
     wx.navigateTo({ url: '/pages/settings/settings' });
+  },
+
+  /** 检查医生是否有新建议 */
+  checkDoctorNote() {
+    const token = getApp().getToken();
+    if (!token) return;
+
+    wx.request({
+      url: `${BASE_URL}/api/patient/note/check`,
+      header: { Authorization: `Bearer ${token}` },
+      success: (res) => {
+        if (res.data.code === 0 && res.data.data.has_note) {
+          const lastRead = wx.getStorageSync('last_note_read_time');
+          const updatedAt = res.data.data.updated_at;
+          this.setData({ hasNewNote: !lastRead || updatedAt !== lastRead });
+        } else {
+          this.setData({ hasNewNote: false });
+        }
+      },
+      fail: () => {}
+    });
   },
 
   /** 跳转到医生授权页 */

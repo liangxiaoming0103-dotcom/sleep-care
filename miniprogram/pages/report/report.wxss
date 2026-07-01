@@ -412,3 +412,38 @@
   font-size: 18rpx;
   color: #94a3b8;
 }
+
+/* =====================================================
+   医生建议卡片
+   ===================================================== */
+.advice-card {
+  background: #fff;
+  border-left: 6rpx solid #6366f1;
+  border-radius: 16rpx;
+  padding: 22rpx 24rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.04);
+}
+.advice-header {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  margin-bottom: 8rpx;
+}
+.advice-icon { font-size: 24rpx; }
+.advice-title {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #6366f1;
+}
+.advice-time {
+  font-size: 20rpx;
+  color: #94A3B8;
+  margin-left: auto;
+}
+.advice-content {
+  font-size: 26rpx;
+  color: #475569;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}

@@ -275,16 +275,62 @@
   box-shadow: 0 8rpx 24rpx rgba(79, 70, 229, 0.3);
 }
 
-.settings-entry {
-  margin-top: 28rpx;
+/* =====================================================
+   快捷入口卡片
+   ===================================================== */
+.quick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  margin-top: 24rpx;
 }
-
-.settings-entry button {
-  background: #ffffff;
-  color: #6366f1;
+.action-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 26rpx 28rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.04);
+}
+.action-card:active {
+  background: #f8fafc;
+}
+.action-left {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  position: relative;
+}
+.action-icon {
+  width: 52rpx;
+  height: 52rpx;
+  border-radius: 14rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+}
+.advice-icon-bg  { background: #ecfdf5; }
+.sleep-icon-bg   { background: #eef2ff; }
+.doctor-icon-bg  { background: #fff7ed; }
+.action-text {
   font-size: 28rpx;
   font-weight: 600;
-  border-radius: 20rpx;
-  border: 2rpx solid #e0e7ff;
-  padding: 18rpx 0;
+  color: #1e293b;
+}
+.action-arrow {
+  font-size: 32rpx;
+  color: #cbd5e1;
+}
+.red-dot {
+  position: absolute;
+  top: -4rpx;
+  left: -4rpx;
+  width: 16rpx;
+  height: 16rpx;
+  background: #EF4444;
+  border-radius: 50%;
+  border: 2rpx solid #fff;
+  box-shadow: 0 0 0 4rpx rgba(239,68,68,0.2);
 }

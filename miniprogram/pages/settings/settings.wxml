@@ -1,44 +1,67 @@
 <!--pages/settings/settings.wxml-->
-<!-- 作息设置页 -->
+<!-- 设置页：个人信息 + 作息 -->
 
 <view class="page-container">
-  <!-- 加载 -->
+  <view class="top-bar">
+    <view class="back-btn" bindtap="goBack">‹ 返回</view>
+  </view>
+
   <view wx:if="{{loading}}" class="loading-box">
     <view class="loading-spinner"></view>
     <text class="loading-text">加载中...</text>
   </view>
 
-  <!-- 设置表单 -->
-  <view wx:else class="form-scroll">
+  <view wx:else>
 
-    <view class="setting-item">
-      <text class="label">就寝时间</text>
-      <picker mode="time" value="{{bedTime}}" bindchange="onBedTimeChange">
-        <view class="picker-value">{{bedTime || '请选择'}}</view>
-      </picker>
-    </view>
-
-    <view class="setting-item">
-      <text class="label">起床时间</text>
-      <picker mode="time" value="{{wakeTime}}" bindchange="onWakeTimeChange">
-        <view class="picker-value">{{wakeTime || '请选择'}}</view>
-      </picker>
-    </view>
-
-    <view class="setting-item setting-item-col">
-      <view class="slider-header">
-        <text class="label">日出模拟时长</text>
-        <text class="slider-value">{{sunriseDuration}} 分钟</text>
+    <!-- 个人信息卡片 -->
+    <view class="section-label">👤 个人信息</view>
+    <view class="card">
+      <view class="card-item">
+        <text class="card-label">昵称</text>
+        <input class="card-input" value="{{nickname}}" placeholder="未设置" bindinput="onNicknameChange" />
       </view>
-      <view class="slider-body">
-        <text class="slider-min">5</text>
-        <slider min="5" max="30" value="{{sunriseDuration}}" bindchange="onSunriseChange" activeColor="#4A90D9" backgroundColor="#e2e8f0" block-size="22" />
-        <text class="slider-max">30</text>
+      <view class="card-item">
+        <text class="card-label">性别</text>
+        <view class="gender-row">
+          <view class="gender-opt {{gender === 1 ? 'gender-active' : ''}}" data-gender="1" bindtap="onGenderChange">男</view>
+          <view class="gender-opt {{gender === 2 ? 'gender-active' : ''}}" data-gender="2" bindtap="onGenderChange">女</view>
+          <view class="gender-opt {{gender === 0 ? 'gender-active' : ''}}" data-gender="0" bindtap="onGenderChange">未知</view>
+        </view>
+      </view>
+      <view class="card-item">
+        <text class="card-label">出生年份</text>
+        <input class="card-input" type="number" value="{{birthYear}}" placeholder="未设置" bindinput="onBirthYearChange" />
       </view>
     </view>
+    <button class="btn-outline" bindtap="saveProfile">保存个人信息</button>
 
-    <!-- 保存按钮 -->
-    <button class="save-btn" type="primary" bindtap="saveSettings">保存</button>
+    <!-- 作息卡片 -->
+    <view class="section-label">🌙 作息设置</view>
+    <view class="card">
+      <view class="card-item">
+        <text class="card-label">就寝时间</text>
+        <picker mode="time" value="{{bedTime}}" bindchange="onBedTimeChange">
+          <view class="card-picker">{{bedTime || '请选择'}}</view>
+        </picker>
+      </view>
+      <view class="card-item">
+        <text class="card-label">起床时间</text>
+        <picker mode="time" value="{{wakeTime}}" bindchange="onWakeTimeChange">
+          <view class="card-picker">{{wakeTime || '请选择'}}</view>
+        </picker>
+      </view>
+      <view class="card-item-col">
+        <view class="slider-top">
+          <text class="card-label">日出模拟</text>
+          <text class="slider-num">{{sunriseDuration}} 分钟</text>
+        </view>
+        <slider min="5" max="30" value="{{sunriseDuration}}" bindchange="onSunriseChange" activeColor="#6366f1" backgroundColor="#e2e8f0" block-size="24" />
+        <view class="slider-range">
+          <text>5</text><text>30</text>
+        </view>
+      </view>
+    </view>
+    <button class="btn-primary" bindtap="saveSettings">保存作息</button>
 
   </view>
 </view>

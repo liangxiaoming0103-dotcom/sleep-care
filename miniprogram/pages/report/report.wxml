@@ -31,6 +31,16 @@
       <view class="nav-arrow {{isToday ? 'nav-disabled' : ''}}" bindtap="onNextDay">▶</view>
     </view>
 
+    <!-- 医生建议 -->
+    <view class="advice-card" wx:if="{{doctorNote}}">
+      <view class="advice-header">
+        <text class="advice-icon">💬</text>
+        <text class="advice-title">{{doctorName}}医生</text>
+        <text class="advice-time">{{doctorNoteTime}}</text>
+      </view>
+      <text class="advice-content">{{doctorNote}}</text>
+    </view>
+
     <!-- 视图切换 -->
     <view class="tab-bar">
       <view class="tab-item {{currentTab === 0 ? 'tab-active' : ''}}" bindtap="onSwitchTab" data-tab="{{0}}">

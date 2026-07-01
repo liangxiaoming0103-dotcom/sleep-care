@@ -277,6 +277,10 @@
     }
     .patient-card.card-pending::after { background: var(--amber-400); }
     .patient-card.card-active::after  { background: var(--emerald-500); }
+    .patient-card.card-active .tag,
+    .patient-card.card-pending .tag {
+      transition: all .4s cubic-bezier(.4,0,.2,1);
+    }
     .patient-card:hover {
       box-shadow: 0 12px 32px rgba(0,0,0,.10), 0 4px 8px rgba(0,0,0,.05);
       transform: translateY(-4px);
@@ -673,6 +677,7 @@ let token = '';
 let doctorInfo = null;
 let currentPatient = null;
 let chartInstance = null;
+let refreshTimer = null;   // 列表自动刷新定时器
 
 // =====================================================
 // 工具函数
@@ -683,6 +688,11 @@ function switchView(name) {
   // 切换视图时销毁图表，避免隐藏容器中的 resize 问题
   if (name !== 'report' && chartInstance) {
     chartInstance.dispose(); chartInstance = null;
+  }
+  // 离开列表页时停止自动刷新
+  if (name !== 'list' && refreshTimer) {
+    clearInterval(refreshTimer);
+    refreshTimer = null;
   }
 }
 
@@ -856,16 +866,24 @@ async function handleRegister() {
 // =====================================================
 async function showPatientList() {
   switchView('list');
+  // 启动 30 秒自动刷新
+  if (refreshTimer) clearInterval(refreshTimer);
+  refreshTimer = setInterval(() => loadPatientList(true), 30000);
+
   showLoading('patient-grid');
   document.getElementById('empty-state').style.display = 'none';
   document.getElementById('patient-count').textContent = '';
+  await loadPatientList(false);
+}
 
+/** 加载患者列表（silent=true 时静默刷新，不显示loading） */
+async function loadPatientList(silent) {
   try {
     const res = await authFetch(API_BASE + '/api/doctor/patients');
     const json = await res.json();
 
     if (json.code !== 0) {
-      showToast(json.message || '获取列表失败');
+      if (!silent) showToast(json.message || '获取列表失败');
       document.getElementById('patient-grid').innerHTML = '';
       document.getElementById('empty-state').style.display = 'block';
       return;
@@ -889,9 +907,11 @@ async function showPatientList() {
     });
   } catch (err) {
     console.error('[Patients]', err);
-    showToast('网络错误，请重试');
-    document.getElementById('patient-grid').innerHTML = '';
-    document.getElementById('empty-state').style.display = 'block';
+    if (!silent) {
+      showToast('网络错误，请重试');
+      document.getElementById('patient-grid').innerHTML = '';
+      document.getElementById('empty-state').style.display = 'block';
+    }
   }
 }
 
@@ -951,10 +971,11 @@ function escapeHtml(str) {
 }
 
 async function handleConfirm(patientId) {
-  // 二次确认
   if (!confirm('确认授权该患者查看其睡眠数据？')) return;
 
   const btn = document.getElementById('confirm-btn-' + patientId);
+  const card = document.getElementById('confirm-btn-' + patientId)?.closest('.patient-card');
+
   if (btn) { btn.disabled = true; btn.textContent = '处理中…'; }
 
   try {
@@ -966,15 +987,27 @@ async function handleConfirm(patientId) {
     const json = await res.json();
 
     if (json.code === 0) {
-      alert('确认授权成功！');
-      showPatientList();
+      // 动画过渡：卡片即时变色
+      if (card) {
+        card.classList.remove('card-pending');
+        card.classList.add('card-active');
+        const tag = card.querySelector('.tag');
+        if (tag) { tag.className = 'tag tag-active'; tag.textContent = '已授权'; }
+        const actionDiv = card.querySelector('.card-actions');
+        if (actionDiv) {
+          actionDiv.innerHTML = '<button class="btn btn-sm btn-green" style="cursor:default;opacity:0.7">✓ 已确认</button>';
+        }
+      }
+      showToast('授权已确认', 'success');
+      // 1.5 秒后静默刷新列表
+      setTimeout(() => showPatientList(), 1500);
     } else {
-      alert(json.message);
+      showToast(json.message || '确认失败');
       if (btn) { btn.disabled = false; btn.textContent = '✓ 确认授权'; }
     }
   } catch (err) {
     console.error('[Confirm]', err);
-    alert('网络请求失败');
+    showToast('网络错误，请重试');
     if (btn) { btn.disabled = false; btn.textContent = '✓ 确认授权'; }
   }
 }

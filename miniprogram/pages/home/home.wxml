@@ -97,14 +97,35 @@
       <button class="go-report-btn" bindtap="goToReport">查看详细分期</button>
     </view>
 
-    <!-- 作息设置入口 -->
-    <view class="settings-entry">
-      <button bindtap="goToSettings">作息设置</button>
-    </view>
+    <!-- 快捷入口区 -->
+    <view class="quick-actions">
+      <!-- 医生建议 -->
+      <view class="action-card" bindtap="goToReport">
+        <view class="action-left">
+          <view class="action-icon advice-icon-bg">💬</view>
+          <text class="action-text">医生建议</text>
+          <view class="red-dot" wx:if="{{hasNewNote}}"></view>
+        </view>
+        <text class="action-arrow">›</text>
+      </view>
 
-    <!-- 医生授权入口 -->
-    <view class="settings-entry">
-      <button bindtap="goToDoctors">👨‍⚕️ 医生授权</button>
+      <!-- 作息设置 -->
+      <view class="action-card" bindtap="goToSettings">
+        <view class="action-left">
+          <view class="action-icon sleep-icon-bg">🌙</view>
+          <text class="action-text">作息设置</text>
+        </view>
+        <text class="action-arrow">›</text>
+      </view>
+
+      <!-- 医生授权 -->
+      <view class="action-card" bindtap="goToDoctors">
+        <view class="action-left">
+          <view class="action-icon doctor-icon-bg">👨‍⚕️</view>
+          <text class="action-text">医生授权</text>
+        </view>
+        <text class="action-arrow">›</text>
+      </view>
     </view>
   </view>
 </view>

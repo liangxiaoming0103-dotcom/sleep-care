@@ -36,7 +36,7 @@ Page({
 
     // c. 发起 GET 请求，请求头携带 Authorization
     wx.request({
-      url: 'http://localhost:3000/api/device/list',
+      url: 'http://127.0.0.1:3000/api/device/list',
       method: 'GET',
       header: {
         'Content-Type': 'application/json',
@@ -70,7 +70,7 @@ Page({
 
     // a. 发起 POST 请求添加虚拟设备
     wx.request({
-      url: 'http://localhost:3000/api/device/add',
+      url: 'http://127.0.0.1:3000/api/device/add',
       method: 'POST',
       header: {
         'Content-Type': 'application/json',
@@ -115,7 +115,7 @@ Page({
 
         // a. 发起 DELETE 请求
         wx.request({
-          url: 'http://localhost:3000/api/devices/' + deviceId,
+          url: 'http://127.0.0.1:3000/api/devices/' + deviceId,
           method: 'DELETE',
           header: {
             'Content-Type': 'application/json',

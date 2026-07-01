@@ -1,6 +1,10 @@
 <!-- pages/doctors/doctors.wxml — 医生授权页面 -->
 <view class="container">
 
+  <view class="top-bar">
+    <view class="back-btn" bindtap="goBack">‹ 返回</view>
+  </view>
+
   <!-- ==================== 选择区 ==================== -->
   <view class="zone-card">
     <view class="zone-header">

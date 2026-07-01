@@ -1,7 +1,7 @@
 // pages/report/report.js
 // 睡眠报告页：三视图（分期 / 噪音 / 趋势）
 
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = 'http://127.0.0.1:3000';
 const WEEK = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
 
 Page({
@@ -12,6 +12,11 @@ Page({
     dateWeekday: '',
     isToday: false,
     loading: true,
+
+    // 医生建议
+    doctorName: '',
+    doctorNote: '',
+    doctorNoteTime: '',
 
     // 视图
     currentTab: 0,       // 0=分期 1=噪音 2=趋势
@@ -45,6 +50,7 @@ Page({
     this.loadNoise();
     this.loadTrend();
     this.loadSummary();
+    this.loadDoctorNote();
   },
 
   syncDateUI() {
@@ -322,6 +328,32 @@ Page({
     };
 
     this.summaryChart.setOption(option);
+  },
+
+  /* ================================================================
+     医生建议
+     ================================================================ */
+  loadDoctorNote() {
+    const token = getApp().getToken();
+    if (!token) return;
+
+    wx.request({
+      url: `${BASE_URL}/api/patient/note/check`,
+      header: { Authorization: `Bearer ${token}` },
+      success: (res) => {
+        if (res.data.code === 0 && res.data.data.has_note) {
+          const d = res.data.data;
+          this.setData({
+            doctorName: d.doctor_name,
+            doctorNote: d.doctor_note,
+            doctorNoteTime: d.updated_at ? d.updated_at.slice(0, 16).replace('T', ' ') : ''
+          });
+          // 标记已读
+          wx.setStorageSync('last_note_read_time', d.updated_at);
+        }
+      },
+      fail: () => {}
+    });
   },
 
   /* ================================================================

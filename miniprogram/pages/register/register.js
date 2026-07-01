@@ -10,6 +10,10 @@ Page({
     password2: ''   // 确认密码
   },
 
+  goBack() {
+    wx.navigateBack();
+  },
+
   inputNickname(e) {
     this.setData({ nickname: e.detail.value });
   },
@@ -49,7 +53,7 @@ Page({
     }
 
     wx.request({
-      url: 'http://localhost:3000/api/auth/register',
+      url: 'http://127.0.0.1:3000/api/auth/register',
       method: 'POST',
       header: { 'Content-Type': 'application/json' },
       data: {

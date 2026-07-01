@@ -1,10 +1,27 @@
 /* pages/doctors/doctors.wxss — 医生授权页面样式 */
 
 .container {
+  display: block;
+  height: auto;
   padding: 24rpx 28rpx 180rpx;
-  background-color: #f5f7fa;
+  background: linear-gradient(180deg, #eef2ff 0%, #f5f7fa 40%);
   min-height: 100vh;
   box-sizing: border-box;
+}
+
+/* 顶部返回栏 — 与设置页一致 */
+.top-bar {
+  text-align: left;
+  padding: 20rpx 0 12rpx;
+}
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4rpx;
+  font-size: 28rpx;
+  color: #6366f1;
+  font-weight: 600;
+  padding: 8rpx 0;
 }
 
 /* ========== 区域卡片容器 ========== */
@@ -195,8 +212,10 @@
   font-weight: 800;
 }
 
-/* ========== 已授权区卡片 ========== */
+/* ========== 已授权卡片特有元素 ========== */
 .granted-card {
+  position: relative;
+  overflow: hidden;
   display: flex;
   align-items: center;
   background: #F8FAFC;
@@ -294,11 +313,6 @@
   box-shadow: none;
 }
 
-/* ========== 已授权卡片特有元素 ========== */
-.granted-card {
-  position: relative;
-  overflow: hidden;
-}
 /* 左侧状态色条 */
 .granted-card::after {
   content: '';

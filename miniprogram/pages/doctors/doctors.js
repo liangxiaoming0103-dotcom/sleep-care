@@ -18,9 +18,16 @@ Page({
     pageDoctors: []        // 当前页显示的医生
   },
 
+  goBack() {
+    wx.navigateBack();
+  },
+
   onShow() {
-    this.loadDoctors();
-    this.loadAuthList();
+    // 延迟加载，避免页面切换动画期间闪烁
+    setTimeout(() => {
+      this.loadDoctors();
+      this.loadAuthList();
+    }, 100);
   },
 
   // ========== 加载所有医生 ==========
