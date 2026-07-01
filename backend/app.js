@@ -1225,5 +1225,29 @@ app.put('/api/doctor/confirm', authenticateToken, async (req, res) => {
   return res.json({ code: 0, message: '确认授权成功', data: updated });
 });
 
+// GET /api/doctor/patients —— 医生获取已授权患者列表
+app.get('/api/doctor/patients', authenticateToken, async (req, res) => {
+  const doctorId = req.user.id;
+  if (req.user.role !== 'doctor') {
+    return res.json({ code: 1001, message: '仅限医生访问', data: null });
+  }
+  const db = await getDb();
+  const sql = `
+    SELECT u.id as patient_id, u.nickname, u.phone,
+           a.status, a.expire_date, a.requested_at,
+           (SELECT sleep_score FROM sleep_reports
+            WHERE user_id = u.id
+            ORDER BY report_date DESC LIMIT 1) as latest_score
+    FROM doctor_authorizations a
+    JOIN users u ON a.patient_id = u.id
+    WHERE a.doctor_id = ?
+      AND a.status IN ('pending', 'active')
+      AND a.expire_date >= date('now')
+    ORDER BY a.requested_at DESC
+  `;
+  const patients = dbGetAll(db, sql, [doctorId]);
+  return res.json({ code: 0, message: 'success', data: patients });
+});
+
 // 启动服务
 start();
