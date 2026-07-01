@@ -1174,5 +1174,56 @@ app.get('/api/doctor/granted', authenticateToken, async (req, res) => {
   }
 });
 
+/**
+ * 医生确认患者授权请求
+ * PUT /api/doctor/confirm
+ * @param {number} patient_id - 患者ID
+ * @returns {{code: number, message: string, data: object|null}}
+ */
+app.put('/api/doctor/confirm', authenticateToken, async (req, res) => {
+  const doctorId = req.user.id;
+
+  // 1. 验证角色
+  if (req.user.role !== 'doctor') {
+    return res.json({ code: 1001, message: '仅限医生操作', data: null });
+  }
+
+  const patientId = parseInt(req.body.patient_id, 10);
+  if (!patientId || isNaN(patientId)) {
+    return res.json({ code: 1001, message: '请指定患者', data: null });
+  }
+
+  const db = await getDb();
+
+  // 2. 查找待确认的授权记录
+  const auth = dbGetOne(db, `
+    SELECT id FROM doctor_authorizations
+    WHERE doctor_id = ? AND patient_id = ?
+      AND status = 'pending' AND expire_date >= date('now')
+  `, [doctorId, patientId]);
+
+  if (!auth) {
+    return res.json({ code: 1001, message: '未找到待确认的授权请求', data: null });
+  }
+
+  // 3. 更新状态为 active
+  const now = new Date().toISOString();
+  db.run(`
+    UPDATE doctor_authorizations
+    SET status = 'active', responded_at = ?, updated_at = ?
+    WHERE id = ?
+  `, [now, now, auth.id]);
+
+  saveDb();
+
+  // 4. 返回更新后的记录
+  const updated = dbGetOne(db,
+    'SELECT * FROM doctor_authorizations WHERE id = ?',
+    [auth.id]
+  );
+
+  return res.json({ code: 0, message: '确认授权成功', data: updated });
+});
+
 // 启动服务
 start();
