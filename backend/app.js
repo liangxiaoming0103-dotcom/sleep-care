@@ -24,7 +24,7 @@ const ROLE_MAP = {
   textToInt: { 'patient': 0, 'doctor': 1, 'admin': 2 }
 };
 
-const { getDb, saveDb, dbGetOne, dbGetAll } = require('./db/connection');
+const { getDb, saveDb, dbGetOne, dbGetAll, DB_TYPE } = require('./db/connection');
 const { initDatabase } = require('./db/init');
 
 const app = express();
@@ -1207,21 +1207,23 @@ async function start() {
     console.log('[App] 正在初始化数据库...');
     await initDatabase();
 
-    // 1.5 自动迁移：将 role 字段 INTEGER → TEXT（幂等安全）
-    const db = await getDb();
-    const roleMap = { 0: 'patient', 1: 'doctor', 2: 'admin' };
-    const stmt = db.prepare("SELECT id, role FROM users WHERE typeof(role) = 'integer'");
-    const legacyRows = [];
-    while (stmt.step()) legacyRows.push(stmt.getAsObject());
-    stmt.free();
-    if (legacyRows.length > 0) {
-      console.log(`[App] 检测到 ${legacyRows.length} 条旧格式 role，正在迁移…`);
-      for (const row of legacyRows) {
-        const newRole = roleMap[row.role] || 'patient';
-        db.run('UPDATE users SET role = ? WHERE id = ?', [newRole, row.id]);
+    // 1.5 自动迁移：将 role 字段 INTEGER → TEXT（仅 SQLite，MySQL 建表时已是 TEXT）
+    if (DB_TYPE === 'sqlite') {
+      const db = await getDb();
+      const roleMap = { 0: 'patient', 1: 'doctor', 2: 'admin' };
+      const stmt = db.prepare("SELECT id, role FROM users WHERE typeof(role) = 'integer'");
+      const legacyRows = [];
+      while (stmt.step()) legacyRows.push(stmt.getAsObject());
+      stmt.free();
+      if (legacyRows.length > 0) {
+        console.log(`[App] 检测到 ${legacyRows.length} 条旧格式 role，正在迁移…`);
+        for (const row of legacyRows) {
+          const newRole = roleMap[row.role] || 'patient';
+          db.run('UPDATE users SET role = ? WHERE id = ?', [newRole, row.id]);
+        }
+        saveDb();
+        console.log('[App] role 迁移完成');
       }
-      saveDb();
-      console.log('[App] role 迁移完成');
     }
 
     // 2. 启动 HTTP 服务
