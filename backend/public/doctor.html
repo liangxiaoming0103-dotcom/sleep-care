@@ -1,1 +1,975 @@
-<!-- TODO: 医生端页面 -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>智能睡眠管理 · 医生端</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <style>
+    /* ============================================================
+       全局重置 & CSS 变量
+       ============================================================ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --blue-50:  #eff6ff;
+      --blue-100: #dbeafe;
+      --blue-200: #bfdbfe;
+      --blue-400: #60a5fa;
+      --blue-500: #3b82f6;
+      --blue-600: #2563eb;
+      --blue-700: #1d4ed8;
+      --blue-800: #1e40af;
+      --blue-900: #1e3a8a;
+      --emerald-50:  #ecfdf5;
+      --emerald-100: #d1fae5;
+      --emerald-500: #10b981;
+      --emerald-600: #059669;
+      --emerald-700: #047857;
+      --amber-50:  #fffbeb;
+      --amber-100: #fef3c7;
+      --amber-400: #fbbf24;
+      --amber-500: #f59e0b;
+      --amber-600: #d97706;
+      --amber-700: #b45309;
+      --red-50:  #fef2f2;
+      --red-400: #f87171;
+      --red-500: #ef4444;
+      --red-600: #dc2626;
+      --slate-50:  #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-200: #e2e8f0;
+      --slate-300: #cbd5e1;
+      --slate-400: #94a3b8;
+      --slate-500: #64748b;
+      --slate-600: #475569;
+      --slate-700: #334155;
+      --slate-800: #1e293b;
+      --slate-900: #0f172a;
+      --radius-sm: 8px;
+      --radius:   14px;
+      --radius-lg: 20px;
+      --radius-xl: 24px;
+      --shadow-xs: 0 1px 2px rgba(0,0,0,.04);
+      --shadow-sm: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+      --shadow:    0 1px 3px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.04);
+      --shadow-md: 0 4px 12px rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.05);
+      --shadow-lg: 0 8px 24px rgba(0,0,0,.08), 0 20px 48px rgba(0,0,0,.06);
+      --transition: .25s cubic-bezier(.4,0,.2,1);
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                   "Microsoft YaHei", "Noto Sans SC", sans-serif;
+      background: var(--slate-50);
+      color: var(--slate-800);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ============================================================
+       视图切换 & 入场动画
+       ============================================================ */
+    .view { display: none; }
+    .view.active { display: block; animation: fadeSlideIn .4s ease; }
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ============================================================
+       容器
+       ============================================================ */
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 28px 24px 80px;
+    }
+
+    /* ============================================================
+       按钮基础样式
+       ============================================================ */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      height: 44px; padding: 0 22px;
+      font-size: 14px; font-weight: 600; border: none; border-radius: 10px;
+      cursor: pointer; letter-spacing: .01em;
+      transition: all var(--transition);
+      position: relative; overflow: hidden;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn-primary {
+      width: 100%; height: 48px;
+      color: #fff; background: linear-gradient(135deg, var(--blue-600), var(--blue-700));
+      box-shadow: 0 4px 14px rgba(37,99,235,.3);
+      font-size: 15px; border-radius: 12px;
+    }
+    .btn-primary:hover {
+      box-shadow: 0 6px 20px rgba(37,99,235,.4);
+      transform: translateY(-1px);
+    }
+    .btn-primary:disabled {
+      opacity: .6; transform: none; box-shadow: none; cursor: not-allowed;
+    }
+    .btn-sm { height: 34px; padding: 0 14px; font-size: 13px; border-radius: 8px; }
+    .btn-outline {
+      background: #fff; color: var(--slate-600);
+      border: 1.5px solid var(--slate-200);
+    }
+    .btn-outline:hover { background: var(--slate-50); border-color: var(--slate-300); }
+    .btn-blue {
+      background: linear-gradient(135deg, var(--blue-500), var(--blue-600));
+      color: #fff; box-shadow: 0 2px 8px rgba(59,130,246,.25);
+    }
+    .btn-blue:hover { box-shadow: 0 4px 14px rgba(59,130,246,.35); transform: translateY(-1px); }
+    .btn-green {
+      background: linear-gradient(135deg, var(--emerald-500), var(--emerald-600));
+      color: #fff; box-shadow: 0 2px 8px rgba(16,185,129,.25);
+    }
+    .btn-green:hover { box-shadow: 0 4px 14px rgba(16,185,129,.35); transform: translateY(-1px); }
+    .btn-ghost {
+      background: transparent; color: var(--slate-400); border: none;
+      height: auto; padding: 0; font-weight: 500; font-size: 13px;
+    }
+    .btn-ghost:hover { color: var(--red-500); }
+
+    /* ============================================================
+       登录页
+       ============================================================ */
+    .login-view-wrapper {
+      display: flex; justify-content: center; align-items: center;
+      min-height: 100vh; padding: 24px;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% -20%, rgba(59,130,246,.08) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 50% at 50% 120%, rgba(16,185,129,.06) 0%, transparent 70%),
+        var(--slate-50);
+    }
+    .login-card {
+      background: #fff; border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-lg), 0 0 0 1px rgba(0,0,0,.03);
+      padding: 52px 44px 44px; width: 100%; max-width: 420px;
+      position: relative;
+    }
+    .login-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+      background: linear-gradient(90deg, var(--blue-500), var(--emerald-500));
+      border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    }
+    .login-icon {
+      width: 56px; height: 56px; border-radius: 16px;
+      background: linear-gradient(135deg, var(--blue-500), var(--blue-700));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; margin: 0 auto 20px;
+      box-shadow: 0 8px 24px rgba(37,99,235,.25);
+    }
+    .login-title {
+      font-size: 22px; font-weight: 800; color: var(--slate-900);
+      text-align: center; margin-bottom: 4px; letter-spacing: -.01em;
+    }
+    .login-subtitle {
+      font-size: 14px; color: var(--slate-400); text-align: center;
+      margin-bottom: 36px;
+    }
+    .form-group { margin-bottom: 18px; }
+    .form-group label {
+      display: block; font-size: 13px; font-weight: 700;
+      color: var(--slate-600); margin-bottom: 6px;
+      text-transform: uppercase; letter-spacing: .04em;
+    }
+    .input-wrap {
+      position: relative;
+    }
+    .input-wrap .input-icon {
+      position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+      font-size: 16px; color: var(--slate-300); pointer-events: none;
+      transition: color var(--transition);
+    }
+    .input-wrap input {
+      width: 100%; height: 48px; padding: 0 14px 0 42px;
+      font-size: 15px; border: 1.5px solid var(--slate-200);
+      border-radius: 12px; outline: none; background: var(--slate-50);
+      transition: all var(--transition);
+    }
+    .input-wrap input:focus {
+      border-color: var(--blue-400); background: #fff;
+      box-shadow: 0 0 0 4px rgba(59,130,246,.08);
+    }
+    .input-wrap input:focus + .input-icon,
+    .input-wrap input:focus ~ .input-icon { color: var(--blue-500); }
+    .error-msg {
+      color: var(--red-500); font-size: 12px; text-align: center;
+      min-height: 18px; margin: 6px 0 2px;
+    }
+
+    /* ============================================================
+       顶部导航
+       ============================================================ */
+    .navbar {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 32px; padding: 20px 28px;
+      background: #fff; border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+    }
+    .navbar-brand {
+      display: flex; align-items: center; gap: 12px;
+    }
+    .navbar-avatar {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: linear-gradient(135deg, var(--blue-100), var(--blue-200));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+    .navbar-greeting { font-size: 15px; color: var(--slate-500); }
+    .navbar-greeting strong { color: var(--slate-900); font-weight: 700; }
+    .navbar-right { display: flex; align-items: center; gap: 12px; }
+    .navbar-phone {
+      font-size: 13px; color: var(--slate-400);
+      padding: 6px 12px; background: var(--slate-50); border-radius: 20px;
+    }
+
+    /* ============================================================
+       列表页
+       ============================================================ */
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .section-title {
+      font-size: 18px; font-weight: 800; color: var(--slate-900);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .section-title .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--blue-500);
+    }
+    .section-count {
+      font-size: 13px; color: var(--slate-400); font-weight: 500;
+    }
+    .patient-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    .patient-card {
+      background: #fff; border-radius: var(--radius-lg); box-shadow: var(--shadow);
+      padding: 24px; transition: all var(--transition);
+      border: 1px solid transparent;
+      position: relative; overflow: hidden;
+    }
+    .patient-card::after {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+      border-radius: 0 4px 4px 0;
+      transition: background var(--transition);
+    }
+    .patient-card.card-pending::after { background: var(--amber-400); }
+    .patient-card.card-active::after  { background: var(--emerald-500); }
+    .patient-card:hover {
+      box-shadow: var(--shadow-md); transform: translateY(-2px);
+      border-color: var(--slate-100);
+    }
+    .card-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .card-name-block { flex: 1; min-width: 0; }
+    .card-name {
+      font-size: 17px; font-weight: 700; color: var(--slate-900);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .card-phone-row {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 13px; color: var(--slate-400); margin-top: 3px;
+    }
+    .tag {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 14px; font-size: 12px; font-weight: 700;
+      border-radius: 20px; white-space: nowrap; flex-shrink: 0;
+    }
+    .tag::before {
+      content: ''; width: 6px; height: 6px; border-radius: 50%;
+    }
+    .tag-pending {
+      background: var(--amber-50); color: var(--amber-700);
+    }
+    .tag-pending::before { background: var(--amber-500); }
+    .tag-active {
+      background: var(--emerald-50); color: var(--emerald-700);
+    }
+    .tag-active::before { background: var(--emerald-500); }
+    .card-divider {
+      height: 1px; background: var(--slate-100); margin-bottom: 14px;
+    }
+    .card-score-row {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .card-score-label {
+      font-size: 12px; color: var(--slate-400); font-weight: 600;
+      text-transform: uppercase; letter-spacing: .04em;
+    }
+    .card-score-value {
+      display: flex; align-items: baseline; gap: 3px;
+    }
+    .card-score-value .num {
+      font-size: 40px; font-weight: 900; line-height: 1;
+      background: linear-gradient(135deg, var(--blue-600), var(--blue-500));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .card-score-value .unit {
+      font-size: 13px; color: var(--slate-400); font-weight: 600;
+    }
+    .card-score-ring {
+      width: 56px; height: 56px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 900;
+      flex-shrink: 0;
+    }
+    .ring-good { background: var(--emerald-50); color: var(--emerald-600); }
+    .ring-ok   { background: var(--blue-50);   color: var(--blue-600);   }
+    .ring-warn { background: var(--amber-50);  color: var(--amber-600);  }
+    .ring-none { background: var(--slate-100); color: var(--slate-400);  }
+
+    .card-actions { display: flex; gap: 10px; }
+    .card-actions .btn-sm { flex: 1; }
+
+    /* ============================================================
+       空状态
+       ============================================================ */
+    .empty-state {
+      text-align: center; padding: 80px 20px;
+    }
+    .empty-illustration {
+      width: 100px; height: 100px; border-radius: 50%;
+      background: var(--slate-100); margin: 0 auto 20px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 44px;
+    }
+    .empty-state .text {
+      font-size: 15px; color: var(--slate-400); font-weight: 500;
+    }
+
+    /* ============================================================
+       报告页
+       ============================================================ */
+    .back-row {
+      display: flex; align-items: center; gap: 16px; margin-bottom: 28px;
+    }
+    .back-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px; font-size: 13px; font-weight: 700;
+      color: var(--blue-600); background: var(--blue-50);
+      border: none; border-radius: 10px; cursor: pointer;
+      transition: all var(--transition);
+    }
+    .back-btn:hover { background: var(--blue-100); }
+    .report-patient-name {
+      font-size: 18px; font-weight: 800; color: var(--slate-900);
+    }
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 18px; margin-bottom: 28px;
+    }
+    .metric-card {
+      background: #fff; border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm); padding: 24px 20px;
+      text-align: center; transition: all var(--transition);
+    }
+    .metric-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+    .metric-icon {
+      width: 44px; height: 44px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; margin: 0 auto 12px;
+    }
+    .metric-icon.score  { background: var(--emerald-50); }
+    .metric-icon.clock  { background: var(--blue-50); }
+    .metric-icon.moon   { background: #ede9fe; }
+    .metric-icon.awake  { background: var(--amber-50); }
+    .metric-label {
+      font-size: 12px; color: var(--slate-400); font-weight: 600;
+      text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px;
+    }
+    .metric-value {
+      font-size: 34px; font-weight: 900; color: var(--slate-900); line-height: 1.1;
+    }
+    .metric-unit {
+      font-size: 12px; color: var(--slate-400); margin-top: 4px; font-weight: 500;
+    }
+
+    .chart-card {
+      background: #fff; border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm); padding: 28px 24px 20px;
+    }
+    .chart-title {
+      font-size: 16px; font-weight: 800; color: var(--slate-800);
+      margin-bottom: 8px; display: flex; align-items: center; gap: 8px;
+    }
+    .chart-container { width: 100%; height: 360px; }
+
+    /* ============================================================
+       加载
+       ============================================================ */
+    .loading-wrap {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; padding: 60px 20px; gap: 14px;
+    }
+    .spinner {
+      width: 32px; height: 32px;
+      border: 3px solid var(--slate-200);
+      border-top-color: var(--blue-600);
+      border-radius: 50%; animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text {
+      font-size: 13px; color: var(--slate-400); font-weight: 500;
+    }
+
+    /* ============================================================
+       Toast
+       ============================================================ */
+    .toast {
+      position: fixed; top: 24px; left: 50%; transform: translateX(-50%) translateY(-12px);
+      padding: 14px 32px; border-radius: 12px;
+      font-size: 13px; font-weight: 700; color: #fff;
+      z-index: 9999; opacity: 0; pointer-events: none;
+      transition: all .3s cubic-bezier(.4,0,.2,1);
+      box-shadow: 0 8px 24px rgba(0,0,0,.15);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .toast.show   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.success { background: var(--emerald-600); }
+    .toast.error  { background: var(--red-500); }
+
+    /* ============================================================
+       响应式
+       ============================================================ */
+    @media (max-width: 700px) {
+      .container { padding: 16px 14px 60px; }
+      .login-card { padding: 40px 24px 32px; }
+      .navbar { padding: 14px 18px; flex-wrap: wrap; gap: 10px; }
+      .navbar-right { width: 100%; justify-content: flex-end; }
+      .patient-grid { grid-template-columns: 1fr; }
+      .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+      .card-score-value .num { font-size: 32px; }
+      .metric-value { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ==================== Toast ==================== -->
+<div class="toast" id="toast"></div>
+
+<!-- ==================== 登录视图 ==================== -->
+<div class="view active" id="login-view">
+  <div class="login-view-wrapper">
+    <div class="login-card">
+      <div class="login-icon">🌙</div>
+      <div class="login-title">智能睡眠管理 · 医生端</div>
+      <div class="login-subtitle">请使用医生账号登录</div>
+      <div class="form-group">
+        <label>手机号</label>
+        <div class="input-wrap">
+          <span class="input-icon">📱</span>
+          <input type="tel" id="phone" placeholder="请输入11位手机号" maxlength="11" autocomplete="tel">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>密码</label>
+        <div class="input-wrap">
+          <span class="input-icon">🔒</span>
+          <input type="password" id="password" placeholder="请输入密码" autocomplete="current-password">
+        </div>
+      </div>
+      <div class="error-msg" id="login-error"></div>
+      <button class="btn btn-primary" id="login-btn" onclick="handleLogin()">登 录</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 患者列表视图 ==================== -->
+<div class="view" id="list-view">
+  <div class="container">
+    <div class="navbar">
+      <div class="navbar-brand">
+        <div class="navbar-avatar">👨‍⚕️</div>
+        <div class="navbar-greeting">
+          您好，<strong><span id="doctor-name">医生</span></strong>
+        </div>
+      </div>
+      <div class="navbar-right">
+        <span class="navbar-phone" id="doctor-phone"></span>
+        <button class="btn btn-sm btn-outline" onclick="handleLogout()">退出登录</button>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <div class="section-title">
+        <span class="dot"></span>患者授权管理
+      </div>
+      <span class="section-count" id="patient-count"></span>
+    </div>
+
+    <div class="patient-grid" id="patient-grid"></div>
+
+    <div class="empty-state" id="empty-state" style="display:none">
+      <div class="empty-illustration">📋</div>
+      <p class="text">暂无患者授权记录</p>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 报告视图 ==================== -->
+<div class="view" id="report-view">
+  <div class="container">
+    <div class="back-row">
+      <button class="back-btn" onclick="showPatientList()">← 返回列表</button>
+      <span class="report-patient-name" id="report-patient-name"></span>
+    </div>
+
+    <div class="metrics-grid" id="metrics-grid"></div>
+
+    <div class="chart-card">
+      <div class="chart-title">📈 近 7 天睡眠评分趋势</div>
+      <div class="chart-container" id="chart-container"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== JavaScript ==================== -->
+<script>
+// =====================================================
+// 全局状态
+// =====================================================
+const API_BASE = 'http://localhost:3000';
+let token = '';
+let doctorInfo = null;
+let currentPatient = null;
+let chartInstance = null;
+
+// =====================================================
+// 工具函数
+// =====================================================
+function switchView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(name + '-view').classList.add('active');
+  // 切换视图时销毁图表，避免隐藏容器中的 resize 问题
+  if (name !== 'report' && chartInstance) {
+    chartInstance.dispose(); chartInstance = null;
+  }
+}
+
+let toastTimer;
+function showToast(msg, type) {
+  type = type || 'error';
+  const el = document.getElementById('toast');
+  el.innerHTML = (type === 'success' ? '✅ ' : '⚠️ ') + msg;
+  el.className = 'toast ' + type + ' show';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.classList.remove('show'); }, 2800);
+}
+
+function maskPhone(phone) {
+  if (!phone || phone.length < 4) return phone || '';
+  return phone.slice(0, 3) + '****' + phone.slice(-4);
+}
+
+async function authFetch(url, options) {
+  options = options || {};
+  options.headers = options.headers || {};
+  options.headers['Authorization'] = 'Bearer ' + token;
+  return fetch(url, options);
+}
+
+function showLoading(containerId) {
+  document.getElementById(containerId).innerHTML = `
+    <div class="loading-wrap">
+      <div class="spinner"></div>
+      <span class="loading-text">加载中…</span>
+    </div>`;
+}
+
+// =====================================================
+// 登录
+// =====================================================
+async function handleLogin() {
+  const phone = document.getElementById('phone').value.trim();
+  const password = document.getElementById('password').value.trim();
+  const errorEl = document.getElementById('login-error');
+  const btn = document.getElementById('login-btn');
+
+  if (!phone || !/^\d{11}$/.test(phone)) {
+    errorEl.textContent = '请输入正确的 11 位手机号'; return;
+  }
+  if (!password || password.length < 6) {
+    errorEl.textContent = '密码长度不能少于 6 位'; return;
+  }
+  errorEl.textContent = '';
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="width:20px;height:20px;border-width:2px;border-top-color:#fff"></span> 登录中…';
+
+  try {
+    const res = await fetch(API_BASE + '/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, password })
+    });
+    const json = await res.json();
+
+    if (json.code === 0) {
+      token = json.data.token;
+      doctorInfo = json.data;
+      localStorage.setItem('sleep_care_token', token);
+      localStorage.setItem('sleep_care_doctor', JSON.stringify(doctorInfo));
+      document.getElementById('doctor-name').textContent = doctorInfo.nickname || '医生';
+      document.getElementById('doctor-phone').textContent = doctorInfo.phone || '';
+      showToast('登录成功', 'success');
+      showPatientList();
+    } else {
+      errorEl.textContent = json.message || '登录失败';
+    }
+  } catch (err) {
+    errorEl.textContent = '网络错误，请确认服务已启动';
+    console.error('[Login]', err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '登 录';
+  }
+}
+
+function handleLogout() {
+  token = '';
+  doctorInfo = null;
+  localStorage.removeItem('sleep_care_token');
+  localStorage.removeItem('sleep_care_doctor');
+  document.getElementById('phone').value = '';
+  document.getElementById('password').value = '';
+  document.getElementById('login-error').textContent = '';
+  switchView('login');
+}
+
+// =====================================================
+// 患者列表
+// =====================================================
+async function showPatientList() {
+  switchView('list');
+  showLoading('patient-grid');
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('patient-count').textContent = '';
+
+  try {
+    const res = await authFetch(API_BASE + '/api/doctor/patients');
+    const json = await res.json();
+
+    if (json.code !== 0) {
+      showToast(json.message || '获取列表失败');
+      document.getElementById('patient-grid').innerHTML = '';
+      document.getElementById('empty-state').style.display = 'block';
+      return;
+    }
+
+    const patients = json.data;
+    if (!patients || patients.length === 0) {
+      document.getElementById('patient-grid').innerHTML = '';
+      document.getElementById('empty-state').style.display = 'block';
+      return;
+    }
+
+    document.getElementById('patient-count').textContent = '共 ' + patients.length + ' 位患者';
+    document.getElementById('patient-grid').innerHTML = patients.map(renderPatientCard).join('');
+
+    patients.forEach(p => {
+      const confirmBtn = document.getElementById('confirm-btn-' + p.patient_id);
+      const reportBtn  = document.getElementById('report-btn-'  + p.patient_id);
+      if (confirmBtn) confirmBtn.onclick = () => handleConfirm(p.patient_id);
+      if (reportBtn)  reportBtn.onclick  = () => showReport(p);
+    });
+  } catch (err) {
+    console.error('[Patients]', err);
+    showToast('网络错误，请重试');
+    document.getElementById('patient-grid').innerHTML = '';
+    document.getElementById('empty-state').style.display = 'block';
+  }
+}
+
+function renderPatientCard(p) {
+  const score = p.latest_score;
+  const statusClass = p.status === 'active' ? 'tag-active' : 'tag-pending';
+  const statusText  = p.status === 'active' ? '已授权' : '待确认';
+  const cardStatus  = p.status === 'active' ? 'card-active' : 'card-pending';
+
+  // 评分环形指示
+  let ringHtml = '';
+  if (score == null) {
+    ringHtml = '<div class="card-score-ring ring-none">--</div>';
+  } else if (score >= 80) {
+    ringHtml = '<div class="card-score-ring ring-good">' + score + '</div>';
+  } else if (score >= 60) {
+    ringHtml = '<div class="card-score-ring ring-ok">' + score + '</div>';
+  } else {
+    ringHtml = '<div class="card-score-ring ring-warn">' + score + '</div>';
+  }
+
+  let actionsHtml = '';
+  if (p.status === 'pending') {
+    actionsHtml = `<button class="btn btn-sm btn-blue" id="confirm-btn-${p.patient_id}">✓ 确认授权</button>`;
+  } else if (p.status === 'active') {
+    actionsHtml = `<button class="btn btn-sm btn-green" id="report-btn-${p.patient_id}">📊 查看报告</button>`;
+  }
+
+  return `
+    <div class="patient-card ${cardStatus}">
+      <div class="card-header">
+        <div class="card-name-block">
+          <div class="card-name">${escapeHtml(p.nickname || '患者')}</div>
+          <div class="card-phone-row">📱 ${maskPhone(p.phone)}</div>
+        </div>
+        <span class="tag ${statusClass}">${statusText}</span>
+      </div>
+      <div class="card-divider"></div>
+      <div class="card-score-row">
+        <div>
+          <div class="card-score-label">最近评分</div>
+          <div class="card-score-value">
+            <span class="num">${score != null ? score : '--'}</span>
+            <span class="unit">分</span>
+          </div>
+        </div>
+        ${ringHtml}
+      </div>
+      <div class="card-actions">${actionsHtml}</div>
+    </div>`;
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+async function handleConfirm(patientId) {
+  // 二次确认
+  if (!confirm('确认授权该患者查看其睡眠数据？')) return;
+
+  const btn = document.getElementById('confirm-btn-' + patientId);
+  if (btn) { btn.disabled = true; btn.textContent = '处理中…'; }
+
+  try {
+    const res = await authFetch(API_BASE + '/api/doctor/confirm', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ patient_id: patientId })
+    });
+    const json = await res.json();
+
+    if (json.code === 0) {
+      alert('确认授权成功！');
+      showPatientList();
+    } else {
+      alert(json.message);
+      if (btn) { btn.disabled = false; btn.textContent = '✓ 确认授权'; }
+    }
+  } catch (err) {
+    console.error('[Confirm]', err);
+    alert('网络请求失败');
+    if (btn) { btn.disabled = false; btn.textContent = '✓ 确认授权'; }
+  }
+}
+
+// =====================================================
+// 报告视图
+// =====================================================
+async function showReport(patient) {
+  currentPatient = patient;
+  switchView('report');
+  document.getElementById('report-patient-name').textContent =
+    (patient.nickname || '患者') + ' · 睡眠报告';
+  showLoading('metrics-grid');
+
+  const today = new Date();
+  const dates = [];
+  const scorePromises = [];
+
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - 1 - i);
+    const dateStr = d.toISOString().slice(0, 10);
+    dates.push(dateStr);
+    scorePromises.push(
+      authFetch(API_BASE + '/api/doctor/patient/data?patient_id='
+                + patient.patient_id + '&date=' + dateStr)
+        .then(r => r.json())
+        .then(json => (json.code === 0 && json.data) ? json.data.sleep_score : null)
+        .catch(() => null)
+    );
+  }
+
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toISOString().slice(0, 10);
+
+  try {
+    const res = await authFetch(API_BASE + '/api/doctor/patient/data?patient_id='
+                                + patient.patient_id + '&date=' + yesterdayStr);
+    const json = await res.json();
+
+    if (json.code === 0 && json.data) {
+      renderMetrics(json.data);
+    } else {
+      // 如果状态不是 active，后端返回"无权查看"，提示用户先确认授权
+      if (json.code === 1001 && json.message.includes('无权查看')) {
+        alert('该患者尚未确认授权，请先点击"确认授权"');
+        showPatientList();
+        return;
+      }
+      document.getElementById('metrics-grid').innerHTML = `
+        <div class="empty-state" style="grid-column:1/-1;padding:40px">
+          <div class="empty-illustration">📭</div>
+          <p class="text">暂无数据</p>
+        </div>`;
+    }
+  } catch (err) {
+    console.error('[Report]', err);
+    document.getElementById('metrics-grid').innerHTML = `
+      <div class="empty-state" style="grid-column:1/-1;padding:40px">
+        <p class="text">加载失败，请重试</p>
+      </div>`;
+  }
+
+  const scores = await Promise.all(scorePromises);
+  // 延迟一帧确保容器可见后再初始化图表
+  requestAnimationFrame(() => renderChart(dates, scores));
+}
+
+function renderMetrics(report) {
+  const totalMin = report.total_sleep_minutes || 0;
+  const deepMin  = report.deep_sleep_minutes || 0;
+  const deepRatio = totalMin > 0 ? ((deepMin / totalMin) * 100).toFixed(1) : '0.0';
+  const awakeCount = report.awake_count ?? '--';
+  const hours = Math.floor(totalMin / 60);
+  const mins = totalMin % 60;
+  const durationText = hours + '<small>h</small> ' + mins + '<small>min</small>';
+
+  document.getElementById('metrics-grid').innerHTML = `
+    <div class="metric-card">
+      <div class="metric-icon score">⭐</div>
+      <div class="metric-label">睡眠评分</div>
+      <div class="metric-value" style="color:${report.sleep_score >= 80 ? '#059669' : report.sleep_score >= 60 ? '#2563eb' : '#d97706'}">${report.sleep_score ?? '--'}</div>
+      <div class="metric-unit">分</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-icon clock">⏱️</div>
+      <div class="metric-label">总时长</div>
+      <div class="metric-value" style="font-size:28px">${durationText}</div>
+      <div class="metric-unit"></div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-icon moon">🌙</div>
+      <div class="metric-label">深睡比例</div>
+      <div class="metric-value">${deepRatio}<small style="font-size:18px;color:var(--slate-400)">%</small></div>
+      <div class="metric-unit"></div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-icon awake">🔔</div>
+      <div class="metric-label">觉醒次数</div>
+      <div class="metric-value" style="color:${awakeCount > 3 ? '#d97706' : 'var(--slate-900)'}">${awakeCount}</div>
+      <div class="metric-unit">次</div>
+    </div>`;
+}
+
+function renderChart(dates, scores) {
+  const container = document.getElementById('chart-container');
+  if (!container) return;
+
+  if (chartInstance) { chartInstance.dispose(); chartInstance = null; }
+
+  chartInstance = echarts.init(container);
+
+  const labels = dates.map(d => d.slice(5)); // MM-DD
+
+  const option = {
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: '#fff',
+      borderColor: '#e2e8f0',
+      borderWidth: 1,
+      textStyle: { color: '#334155', fontSize: 13 },
+      boxShadow: '0 4px 16px rgba(0,0,0,.08)',
+      formatter: function(params) {
+        const p = params[0];
+        const val = p.value != null ? '<b>' + p.value + ' 分</b>' : '无数据';
+        return '<b>' + dates[p.dataIndex] + '</b><br/>睡眠评分：' + val;
+      }
+    },
+    grid: { top: 20, right: 28, bottom: 32, left: 48 },
+    xAxis: {
+      type: 'category', data: labels,
+      axisLine: { lineStyle: { color: '#e2e8f0' } },
+      axisTick: { show: false },
+      axisLabel: { color: '#94a3b8', fontSize: 12, fontWeight: 500 }
+    },
+    yAxis: {
+      type: 'value', min: 0, max: 100, interval: 20,
+      axisLabel: { color: '#94a3b8', fontSize: 12, fontWeight: 500 },
+      splitLine: { lineStyle: { color: '#f1f5f9', type: 'dashed' } }
+    },
+    series: [{
+      data: scores, type: 'line', smooth: true,
+      symbol: 'circle', symbolSize: 8,
+      emphasis: { symbolSize: 12, scale: true },
+      lineStyle:  { color: '#3b82f6', width: 3, cap: 'round' },
+      itemStyle:  { color: '#3b82f6', borderColor: '#fff', borderWidth: 3 },
+      areaStyle: {
+        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: 'rgba(59,130,246,0.20)' },
+          { offset: 1, color: 'rgba(59,130,246,0.02)' }
+        ])
+      },
+      markLine: {
+        silent: true,
+        symbol: 'none',
+        lineStyle: { color: '#e2e8f0', type: 'dashed', width: 1 },
+        data: [{ yAxis: 80, label: { formatter: '优秀', color: '#94a3b8', fontSize: 11 } }]
+      },
+      connectNulls: false
+    }]
+  };
+
+  chartInstance.setOption(option);
+
+  const resizeHandler = () => { if (chartInstance) chartInstance.resize(); };
+  window.removeEventListener('resize', resizeHandler);
+  window.addEventListener('resize', resizeHandler);
+}
+
+// =====================================================
+// 页面初始化
+// =====================================================
+document.addEventListener('DOMContentLoaded', () => {
+  const savedToken = localStorage.getItem('sleep_care_token');
+  const savedDoctor = localStorage.getItem('sleep_care_doctor');
+
+  if (savedToken && savedDoctor) {
+    token = savedToken;
+    try { doctorInfo = JSON.parse(savedDoctor); } catch(e) { doctorInfo = null; }
+
+    if (doctorInfo) {
+      document.getElementById('doctor-name').textContent = doctorInfo.nickname || '医生';
+      document.getElementById('doctor-phone').textContent = doctorInfo.phone || '';
+      showPatientList();
+      return;
+    }
+  }
+
+  switchView('login');
+});
+
+document.getElementById('password').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') handleLogin();
+});
+document.getElementById('phone').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') document.getElementById('password').focus();
+});
+</script>
+
+</body>
+</html>
