@@ -869,8 +869,7 @@ async function showReport(patient) {
 
 function renderMetrics(report) {
   const totalMin = report.total_sleep_minutes || 0;
-  const deepMin  = report.deep_sleep_minutes || 0;
-  const deepRatio = totalMin > 0 ? ((deepMin / totalMin) * 100).toFixed(1) : '0.0';
+  const deepRatio = report.deep_ratio ?? '0.0';
   const awakeCount = report.awake_count ?? '--';
   const hours = Math.floor(totalMin / 60);
   const mins = totalMin % 60;

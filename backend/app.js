@@ -1265,16 +1265,16 @@ app.get('/api/doctor/patient/data', authenticateToken, async (req, res) => {
   }
 
   // 日期参数，默认昨天
-  let date = req.query.date;
-  if (!date) {
-    const y = new Date();
-    y.setDate(y.getDate() - 1);
-    date = y.toISOString().slice(0, 10);
+  let dateStr = req.query.date;
+  if (!dateStr) {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    dateStr = yesterday.toISOString().split('T')[0];
   }
 
   const db = await getDb();
 
-  // 1. 权限校验：仅 active 状态可查看数据
+  // ⚠️ 必须 status = 'active'（不能用 pending）
   const auth = dbGetOne(db, `
     SELECT id FROM doctor_authorizations
     WHERE doctor_id = ? AND patient_id = ?
@@ -1285,17 +1285,30 @@ app.get('/api/doctor/patient/data', authenticateToken, async (req, res) => {
     return res.json({ code: 1001, message: '无权查看该患者数据（需先确认授权）', data: null });
   }
 
-  // 2. 查询睡眠报告
+  // 查询睡眠报告
   const report = dbGetOne(db, `
     SELECT * FROM sleep_reports
     WHERE user_id = ? AND report_date = ?
-  `, [patientId, date]);
+  `, [patientId, dateStr]);
 
   if (!report) {
     return res.json({ code: 1001, message: '暂无数据', data: null });
   }
 
-  return res.json({ code: 0, message: 'success', data: report });
+  // 计算深睡比例
+  const deepRatio = parseFloat((report.deep_sleep_minutes / report.total_sleep_minutes * 100).toFixed(1));
+
+  return res.json({ code: 0, message: 'success', data: {
+    patient_id:        patientId,
+    report_date:       report.report_date,
+    sleep_score:       report.sleep_score,
+    total_sleep_minutes: report.total_sleep_minutes,
+    deep_sleep_minutes:  report.deep_sleep_minutes,
+    rem_sleep_minutes:   report.rem_sleep_minutes,
+    light_sleep_minutes: report.light_sleep_minutes,
+    awake_count:       report.awake_count,
+    deep_ratio:        deepRatio,
+  }});
 });
 
 // 启动服务
